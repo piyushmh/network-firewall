@@ -1,12 +1,14 @@
 #include <pcap.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <netinet/if_ether.h>
 
 #include "packet_inject.h"
 #include "packet_reader.h"
 #include "apply_rule.h"
 #include "network_interface_card.h"
+#include "string_util.h"
 
 void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 			const u_char *packet){
@@ -32,7 +34,9 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     
     struct pcap_handler_argument* arg = (struct pcap_handler_argument*)args;
     printf("Reading packet from interface :%s\n", arg->source.devname);
-    printf("Injecting into interface :%s\n", arg->dest.devname);
+    //printf("Injecting into interface :%s\n", arg->dest.devname);
+
+    struct network_interface sourcenic = arg->source;
 
     ethernet = (struct sniff_ethernet*)(packet);
 
@@ -111,70 +115,16 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 }
 
 
-void read_packets(char *sourcedev, char* destdev){
-
-	pcap_t *sourcehandle;         /* Source Session handle */
-    pcap_t *desthandle;         /* Destination Session handle */
-    char errbuf[PCAP_ERRBUF_SIZE];  /* Error string */
-    struct bpf_program fp;      /* The compiled filter */
-    char filter_exp[] = "tcp";  /* The filter expression */
-    bpf_u_int32 mask;           /* Our net mask */
-    bpf_u_int32 net;        /* Our IP */
-
-    struct network_interface srcdev;
-    strcpy(srcdev.devname, sourcedev);
-    /* Find the properties for the device */
-	if (pcap_lookupnet(sourcedev, &net, &mask, errbuf) == -1) {
-	   fprintf(stderr, "Couldn't get net mask for device %s: %s\n", sourcedev, errbuf);
-	   net = 0;
-	   mask = 0;
-	}
-	srcdev.mask = mask;
-	srcdev.net = net;
-
-    /* Open the session in promiscuous mode */
-    sourcehandle = pcap_open_live(sourcedev, BUFSIZ, 1, 1000, errbuf);
-    if (sourcehandle == NULL) {
-        fprintf(stderr, "Couldn't open source device %s: %s\n", sourcedev, errbuf);
-        exit(2);
-    }
-    /* Compile and apply the filter */
-    if (pcap_compile(sourcehandle, &fp, filter_exp, 0, srcdev.net) == -1) {
-        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(sourcehandle));
-        exit(2);
-    }
-    if (pcap_setfilter(sourcehandle, &fp) == -1) {
-        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(sourcehandle));
-        exit(2);
-    }
-
-    srcdev.handle = sourcehandle;
-
-    struct network_interface dstdev;
-    strcpy(dstdev.devname, destdev);
-    /* Find the properties for the device */
-   	if (pcap_lookupnet(destdev, &net, &mask, errbuf) == -1) {
-   	   fprintf(stderr, "Couldn't get net mask for device %s: %s\n", destdev, errbuf);
-   	   net = 0;
-   	   mask = 0;
-   	}
-   	dstdev.mask = mask;
-   	dstdev.net = net;
-
-    desthandle = pcap_open_live(destdev, BUFSIZ, 1, 1000, errbuf);
-    if (sourcehandle == NULL) {
-        fprintf(stderr, "Couldn't open destination device %s: %s\n", sourcedev, errbuf);
-        exit(2);
-    }
-    
-    dstdev.handle = desthandle;
-
-    struct pcap_handler_argument arg;
-    arg.source = srcdev;
-    arg.dest = dstdev;
-
-    int val = pcap_loop(sourcehandle, 1, disassemble_packet, (u_char*)&arg);
-    printf("%d\n", val); 
-    /* And close the session */
-    pcap_close(sourcehandle);
+void *read_packets(void *nic){
+	pp("here");
+	struct network_interface* interface = (struct network_interface*) nic;
+	print_network_interface(*interface);
+	//while(1){}
+	struct pcap_handler_argument arg;
+	arg.source = *interface;
+	//int val = pcap_loop(interface->handle, 1, disassemble_packet, (void*)(&arg));
+	//printf("%d\n", val);
+	/* And close the session */
+	pcap_close(interface->handle);
+	return 0;
 }

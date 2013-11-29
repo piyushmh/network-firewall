@@ -78,6 +78,7 @@ struct sniff_udp {
 }; /* total udp header length: 8 bytes (=64 bits) */
 
 
-void read_packets(char *sourcedev, char* destdev);
+
+void* read_packets(void* nic);
 
 #endif /* PACKET_READER_H */

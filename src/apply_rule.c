@@ -209,7 +209,6 @@ void traverse(){
 
 void initialize_rules(){
 
-	pp(rule_file_path);
 	FILE *rulefile = NULL;
 	rulefile = fopen(rule_file_path, "r");
 	printf("%p",rulefile);
@@ -218,7 +217,6 @@ void initialize_rules(){
 		return;
 	}
 
-	pp("Here");
 	char* rule;
 	size_t len = 0;
 	size_t read;
@@ -231,7 +229,7 @@ void initialize_rules(){
 			add_rule_to_list(&rules[x->priority],x);
 		}
 	}
-	traverse();
+	//traverse();
 }
 
 struct firewall_rule** findrulehead(u_int32_t sourceip){
@@ -286,7 +284,6 @@ int traverse_rule_matrix( enum PROTOCOL proto, u_int32_t sourceip,
 		u_char *sourcemac, u_char *destmac,
 		struct network_interface sourcedevice){
 
-	//printf("Here\n");
 	if(checkIfSameSubnet(destip, sourcedevice)){
 		return 1;
 	}
@@ -330,10 +327,4 @@ int traverse_rule_matrix( enum PROTOCOL proto, u_int32_t sourceip,
 	return returncode;
 }
 
-
-int main4(){
-	initialize_rules();
-	//traverse();
-	return 0;
-}
 

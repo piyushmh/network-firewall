@@ -11,31 +11,23 @@
 #include <netinet/if_ether.h>
 #include <pcap.h>
 
-
-
 struct network_interface{
 	char devname[20];
 	bpf_u_int32 mask;       /* netmask */
 	bpf_u_int32 net;        /* IP */
 	pcap_t *handle;
-	u_char macAddress[ETHER_ADDR_LEN]; /*Mac address*/
+	u_char macaddress[ETHER_ADDR_LEN]; /*Mac address*/
+	char macaddrstring[256];
 };
+
 
 struct pcap_handler_argument{
 	struct network_interface source;
 	struct network_interface dest;
-	//pcap_t *desthandle;
 };
 
+void initialize_start_interfaces();
+void print_network_interface(struct network_interface nic);
 
-void initialize_interfaces();
 
-/*
-void print_network_interface(struct network_interface nic){
-	printf("\nDevname :%s", nic.devname);
-	printf("\nMacaddress :%s", nic.macAddress);
-
-}
-
-*/
 #endif /* NETWORK_INTERFACE_H_ */
