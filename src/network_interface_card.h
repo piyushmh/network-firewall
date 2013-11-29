@@ -28,6 +28,9 @@ struct pcap_handler_argument{
 
 void initialize_start_interfaces();
 void print_network_interface(struct network_interface nic);
+int match_ip_to_subnet_mask(char* ip, char* maskip, char* devip);
+u_char* find_macaddr_from_ip(u_int32_t ip);
 
+struct network_interface* interface_list[10];
 
 #endif /* NETWORK_INTERFACE_H_ */

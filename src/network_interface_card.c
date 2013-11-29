@@ -17,6 +17,7 @@
 #include "packet_reader.h"
 
 struct network_interface* get_network_interface(char* devname, char* macaddr);
+
 void initialize_start_interfaces(){
 
 	char interface_file_name[] = "/home/piyush/dcn/project_final/NetworkFirewall/src/interfaces.txt";
@@ -30,7 +31,6 @@ void initialize_start_interfaces(){
 	size_t read = 0;
 	char *interface;
 
-	//This would use used to block the main thread
 	pthread_t threads[10];
 	int numthreads = 0;
 
@@ -43,7 +43,6 @@ void initialize_start_interfaces(){
 		char* saveptr;
 		char* token;
 		int ctr=0;
-		//pp(interface);
 		for(;;interface=NULL){
 			token = strtok_r(interface, " ", &saveptr);
 			if(token==NULL)
@@ -60,11 +59,12 @@ void initialize_start_interfaces(){
 		}
 
 		struct network_interface* nic = get_network_interface(devname,macaddr);
+		interface_list[numthreads] = nic;
 		pthread_create(&threads[numthreads++], NULL, read_packets, (void*)nic);
-		//printf("\n%p", &threads[numthreads]);
-		//pi(&thread);
+
 	}
 
+	interface_list[numthreads] = NULL;
 	int i;
 	for(i=0; i< numthreads;i++){
 		pthread_join(threads[i],NULL);
@@ -121,6 +121,36 @@ struct network_interface* get_network_interface(char* devname, char* macaddr){
 
 	return nic;
 
+}
+
+
+int match_ip_to_subnet_mask(char* ip, char* maskip, char* devip){
+	struct in_addr x,y,z;
+	inet_aton(maskip,&x);
+	int maskbits;
+	int mask = ntohl(x.s_addr);
+	for ( maskbits=32 ; (mask & (1L<<(32-maskbits))) == 0 ; maskbits-- );
+	int m= (1<<(maskbits))-1;
+	inet_aton(ip,&y);
+	inet_aton(devip,&z);
+	if( (y.s_addr&m)== (z.s_addr&m))
+		return 1;
+	else
+		return 0;
+
+}
+
+u_char* find_macaddr_from_ip(u_int32_t ip){
+	int ctr = 0;
+	u_char* retmac[ETHER_ADDR_LEN];
+	struct network_interface iter = interface_list[ctr];
+	while(iter!=NULL){
+		if(match_ip_to_subnet_mask(convertfromintergertoIP(ip), iter->mask, iter->net) == 1){
+			memcpy(retmac, iter->macaddress, ETHER_ADDR_LEN);
+			return retmac;
+		}
+	}
+	return NULL;
 }
 
 void print_network_interface(struct network_interface nic){

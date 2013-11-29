@@ -27,6 +27,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 
     u_char sourcemac[ETHER_ADDR_LEN];
     u_char destmac[ETHER_ADDR_LEN];
+    u_char calcdestmac[ETHER_ADDR_LEN];
     u_int32_t sourceip = 0;
     u_int32_t destip = 0;
     u_short sourceport = 0;
@@ -35,7 +36,6 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     struct pcap_handler_argument* arg = (struct pcap_handler_argument*)args;
     printf("Reading packet from interface :%s\n", arg->source.devname);
     //printf("Injecting into interface :%s\n", arg->dest.devname);
-
     struct network_interface sourcenic = arg->source;
 
     ethernet = (struct sniff_ethernet*)(packet);
@@ -98,6 +98,21 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     destip = (uint32_t)inet_addr("55.255.255.252");
     sourceport = 23;
     destport = 34;
+
+    if( protocol == ARP){
+    	//Add into arp table
+    }
+
+
+    if( memcmp(sourcemac, sourcenic.macaddress,ETHER_ADDR_LEN) == 0){//match
+    	return; //do nothing, this was a injected packet
+    }
+
+    calcdestmac = find_macaddr_from_ip(destip);
+    if(memcmp(calcdestmac, sourcenic.macaddress, ETHER_ADDR_LEN) == 0){
+    	return; //this mean this packet belong to the same local network
+    }
+
     int result = traverse_rule_matrix(
     		protocol, sourceip, destip, sourceport, destport,
     		sourcemac, destmac, arg->source);
@@ -118,7 +133,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 void *read_packets(void *nic){
 	pp("here");
 	struct network_interface* interface = (struct network_interface*) nic;
-	print_network_interface(*interface);
+	//print_network_interface(*interface);
 	//while(1){}
 	struct pcap_handler_argument arg;
 	arg.source = *interface;

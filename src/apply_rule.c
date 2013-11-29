@@ -56,7 +56,7 @@ struct firewall_rule* makerulenode(){
 /*
  * Make rule from the rule string
  * This method parses the rule string into its
- * corresponsing elements
+ * corresponding elements
  */
 struct firewall_rule* makerule(char* rulestring){
 
@@ -211,7 +211,6 @@ void initialize_rules(){
 
 	FILE *rulefile = NULL;
 	rulefile = fopen(rule_file_path, "r");
-	printf("%p",rulefile);
 	if(rulefile == NULL){
 		printf("Could open the rules file, no rules would be applied, skipping");
 		return;
