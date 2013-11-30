@@ -13,7 +13,7 @@
 
 int inject_packet( u_char* packet, size_t length ,
 		enum PROTOCOL protocol, struct network_interface sourceinterface,
-		struct network_interface destinterface, u_int32_t destip){
+		struct network_interface destinterface){
 
 	struct sniff_ethernet* eth = (struct sniff_ethernet*)packet;
 

@@ -33,8 +33,8 @@ char *strstrip(char *s){
 	return s;
 }
 
-void pp(char*x){ printf("\n%s",x); fflush(stdout);}
-void pi(int x){ printf("\n%d",x); fflush(stdout);}
+void pp(char*x){ printf("%s\n",x); fflush(stdout);}
+void pi(int x){ printf("%d\n",x); fflush(stdout);}
 
 
 
@@ -83,7 +83,24 @@ int hwaddr_aton(const char *txt, u_char *addr)
     return 0;
 }
 
-char* convertfromintergertoIP(u_int32_t ip){
+void print_packet(u_int32_t sourceip, u_int32_t destip,
+		int sourceport, int destport, u_char* sourcemac, u_char* destmac){
+	printf("\nSouceIP :%s\n", convertfromintegertoIP(sourceip));
+	printf("DestIP :%s\n", convertfromintegertoIP(destip));
+	printf("Souceport :%d\n", sourceport);
+	printf("Destport :%d\n", destport);
+	printf("SourceMac :%s\n", sourcemac);
+	printf("DestMac :%s\n", destmac);
+	fflush(stdout);
+
+}
+
+void print_mac_address(u_char* mac){
+	printf("\n%02X:%02X:%02X:%02X:%02X:%02X\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	fflush(stdout);
+}
+
+char* convertfromintegertoIP(u_int32_t ip){
 	char *x = (char*)malloc(256*sizeof(char));
 	struct in_addr ip_addr;
 	ip_addr.s_addr = ip;

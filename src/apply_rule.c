@@ -186,13 +186,28 @@ struct firewall_rule* makerule(char* rulestring){
 	return rule;
 }
 
+void print_rule(struct firewall_rule* rule){
+	printf("\nSourceIP :%s\n", convertfromintegertoIP(rule->sourceip));
+	printf("Sourcemask :%d\n", rule->sourceipmask);
+	printf("DestIP :%s\n", convertfromintegertoIP(rule->destip));
+	printf("Destmask :%d\n", rule->destipmask);
+	printf("Sourceportstart :%d\n", rule->sourceportrange.start);
+	printf("Sourceportend :%d\n", rule->sourceportrange.end);
+	printf("Destportstart :%d\n", rule->destportrange.start);
+	printf("Destportend :%d\n", rule->destportrange.end);
+	printf("Action :%d\n", rule->action);
+	printf("Priority :%d\n", rule->priority);
+	fflush(stdout);
+}
+
+
 void traverseLL(struct firewall_rule* head){
 	if(head==NULL){
 		printf("Empty shit, returning\n");
 		return;
 	}
 	while(head!=NULL){
-		printf("%p ",head);
+		print_rule(head);
 		head = head->next;
 	}
 	printf("\n");
@@ -205,7 +220,6 @@ void traverse(){
 		traverseLL(head);
 	}
 }
-
 
 void initialize_rules(){
 
@@ -239,15 +253,17 @@ struct firewall_rule** findrulehead(u_int32_t sourceip){
 int match_single_rule(struct firewall_rule* rulenode,
 		struct firewall_rule packetdec){
 
+	//print_rule(rulenode);
 	int retval = 0;
-	if( rulenode->sourceip == packetdec.sourceip){
-		if( rulenode->destip == packetdec.destip){
+	if( match_ip_to_subnet_mask_integers(
+			packetdec.sourceip, rulenode->sourceipmask, rulenode->sourceip)){
+		if( match_ip_to_subnet_mask_integers(
+					packetdec.destip, rulenode->destipmask, rulenode->destip)){
 			if( packetdec.sourceportrange.start >= rulenode->sourceportrange.start
 					&& packetdec.sourceportrange.start <= rulenode->sourceportrange.end){
-
 				if( packetdec.destportrange.start >= rulenode->destportrange.start
 						&& packetdec.destportrange.start <= rulenode->destportrange.end){
-
+					print_rule(rulenode);
 					retval = 1;
 				}
 			}
@@ -260,7 +276,7 @@ struct firewall_rule* traverse_rule_chain(struct firewall_rule* head,
 		struct firewall_rule packetdes){
 
 	if(head==NULL){
-		printf("Empty shit, returning\n");
+		//printf("Empty shit, returning\n");
 		return NULL;
 	}
 	while(head!=NULL){
@@ -280,12 +296,7 @@ int checkIfSameSubnet(u_int32_t sourceip, struct network_interface sourcedevice)
 
 int traverse_rule_matrix( enum PROTOCOL proto, u_int32_t sourceip,
 		u_int32_t destip, u_short sourceport, u_short destport,
-		u_char *sourcemac, u_char *destmac,
-		struct network_interface sourcedevice){
-
-	if(checkIfSameSubnet(destip, sourcedevice)){
-		return 1;
-	}
+		u_char *sourcemac, u_char *destmac){
 
 	int returncode = 0; //default action is  block everything
 

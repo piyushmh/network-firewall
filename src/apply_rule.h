@@ -12,10 +12,8 @@
 #include "network_interface_card.h"
 
 void initialize_rules();
-
 int traverse_rule_matrix( enum PROTOCOL proto, u_int32_t sourceip,
 	u_int32_t destip, u_short sourceport, u_short destport,
-	u_char* sourcemac, u_char* destmac,
-	struct network_interface sourcedevice);
+	u_char* sourcemac, u_char* destmac);
 
 #endif /* APPLY_RULE_H_ */

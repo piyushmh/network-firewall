@@ -115,7 +115,7 @@ struct network_interface* get_network_interface(char* devname, char* macaddr){
 	}
 	nic->handle = sourcehandle;
 
-	u_char macAddress[ETHER_ADDR_LEN];
+	u_char* macAddress = (u_char*)malloc(ETHER_ADDR_LEN*sizeof(u_char));
 	hwaddr_aton(nic->macaddrstring, macAddress);
 	memmove(nic->macaddress, macAddress, ETHER_ADDR_LEN);
 
@@ -123,6 +123,17 @@ struct network_interface* get_network_interface(char* devname, char* macaddr){
 
 }
 
+int match_ip_to_subnet_mask_integers(u_int32_t ip, int mask, u_int32_t devip){
+	//pp("VVV");
+	//pi(ip);
+	//pi(mask);
+	//pi(devip);
+	int m= ((1L)<<(mask))-1;
+	if((ip&m) == (devip&m))
+		return 1;
+	else
+		return 0;
+}
 
 int match_ip_to_subnet_mask(char* ip, char* maskip, char* devip){
 	struct in_addr x,y,z;
@@ -130,33 +141,33 @@ int match_ip_to_subnet_mask(char* ip, char* maskip, char* devip){
 	int maskbits;
 	int mask = ntohl(x.s_addr);
 	for ( maskbits=32 ; (mask & (1L<<(32-maskbits))) == 0 ; maskbits-- );
-	int m= (1<<(maskbits))-1;
 	inet_aton(ip,&y);
 	inet_aton(devip,&z);
-	if( (y.s_addr&m)== (z.s_addr&m))
+	if( match_ip_to_subnet_mask_integers(y.s_addr,maskbits,z.s_addr ))
 		return 1;
 	else
 		return 0;
 
 }
 
-u_char* find_macaddr_from_ip(u_int32_t ip){
+struct network_interface* find_macaddr_from_ip(u_int32_t ip){
+	//pp("XX");
 	int ctr = 0;
-	u_char* retmac[ETHER_ADDR_LEN];
-	struct network_interface iter = interface_list[ctr];
+	struct network_interface* iter = interface_list[ctr];
 	while(iter!=NULL){
-		if(match_ip_to_subnet_mask(convertfromintergertoIP(ip), iter->mask, iter->net) == 1){
-			memcpy(retmac, iter->macaddress, ETHER_ADDR_LEN);
-			return retmac;
+		if(match_ip_to_subnet_mask(convertfromintegertoIP(ip)
+				, convertfromintegertoIP(iter->mask), convertfromintegertoIP(iter->net)) == 1){
+			return iter;
 		}
+		iter = interface_list[++ctr];
 	}
-	return NULL;
+	return iter;
 }
 
 void print_network_interface(struct network_interface nic){
 	printf("\nDevname :%s", nic.devname);
 	printf("\nMacaddress :%s", nic.macaddrstring);
-	printf("\nMask: %s\n", convertfromintergertoIP(nic.mask));
-	printf("\nNet :%s", convertfromintergertoIP(nic.net));
+	printf("\nMask: %s", convertfromintegertoIP(nic.mask));
+	printf("\nNet :%s", convertfromintegertoIP(nic.net));
 	fflush(stdout);
 }

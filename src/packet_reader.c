@@ -27,7 +27,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 
     u_char sourcemac[ETHER_ADDR_LEN];
     u_char destmac[ETHER_ADDR_LEN];
-    u_char calcdestmac[ETHER_ADDR_LEN];
+    struct network_interface* destnic;
     u_int32_t sourceip = 0;
     u_int32_t destip = 0;
     u_short sourceport = 0;
@@ -39,9 +39,6 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     struct network_interface sourcenic = arg->source;
 
     ethernet = (struct sniff_ethernet*)(packet);
-
-    //printf("%02X:%02X:%02X:%02X:%02X:%02X\n",ethernet->ether_shost[0],ethernet->ether_shost[1],ethernet->ether_shost[2],ethernet->ether_shost[3],ethernet->ether_shost[4],ethernet->ether_shost[5]);
-    //printf("%02X:%02X:%02X:%02X:%02X:%02X\n",ethernet->ether_dhost[0],ethernet->ether_dhost[1],ethernet->ether_dhost[2],ethernet->ether_dhost[3],ethernet->ether_dhost[4],ethernet->ether_dhost[5]);
 
     /* Now find which type of packet we got ICMP, TCP, UDP etc */
     memcpy(sourcemac, ethernet->ether_shost, ETHER_ADDR_LEN);
@@ -94,10 +91,12 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		//handle this later
 	}
 
-    sourceip = (uint32_t)inet_addr("60.50.40.33");
-    destip = (uint32_t)inet_addr("55.255.255.252");
+    print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
+    sourceip = (uint32_t)inet_addr("192.168.0.14");
+    destip = (uint32_t)inet_addr("192.168.0.10");
     sourceport = 23;
     destport = 34;
+    hwaddr_aton("6c:71:d9:6a:74:46",sourcemac);
 
     if( protocol == ARP){
     	//Add into arp table
@@ -105,21 +104,30 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 
 
     if( memcmp(sourcemac, sourcenic.macaddress,ETHER_ADDR_LEN) == 0){//match
+    	pp("Injected packet found\n");
     	return; //do nothing, this was a injected packet
     }
 
-    calcdestmac = find_macaddr_from_ip(destip);
-    if(memcmp(calcdestmac, sourcenic.macaddress, ETHER_ADDR_LEN) == 0){
-    	return; //this mean this packet belong to the same local network
+    destnic = find_macaddr_from_ip(destip);
+    //print_mac_address(calcdestmac);
+
+    if(destnic == NULL){
+    	pp("No network interface found with this IP, returning");
+    	return;
+    }
+    if(memcmp(destnic->macaddress, sourcenic.macaddress, ETHER_ADDR_LEN) == 0){
+    	pp("\nLocal area network packet found");
+    	//return; //this mean this packet belong to the same local network
     }
 
+    //Check if this packet is part of a open connection or not
+    print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
     int result = traverse_rule_matrix(
     		protocol, sourceip, destip, sourceport, destport,
-    		sourcemac, destmac, arg->source);
+    		sourcemac, destmac);
 
     if(result == 1){//ALLOW
-    	int res = inject_packet(packet, packetlen, protocol,arg->source,
-    			arg->dest, destip);
+    	int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic,destnic, destip);
     	if(res==1){
     		printf("Injection done\n");
     	}
@@ -131,14 +139,14 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 
 
 void *read_packets(void *nic){
-	pp("here");
+	//pp("here");
 	struct network_interface* interface = (struct network_interface*) nic;
 	//print_network_interface(*interface);
 	//while(1){}
 	struct pcap_handler_argument arg;
 	arg.source = *interface;
-	//int val = pcap_loop(interface->handle, 1, disassemble_packet, (void*)(&arg));
-	//printf("%d\n", val);
+	int val = pcap_loop(interface->handle, 1, disassemble_packet, (void*)(&arg));
+	printf("%d\n", val);
 	/* And close the session */
 	pcap_close(interface->handle);
 	return 0;
