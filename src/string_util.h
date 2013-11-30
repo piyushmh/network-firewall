@@ -16,7 +16,7 @@ char *strstrip(char *s);
 int hwaddr_aton(const char *txt, u_char *addr);
 
 char* convertfromintegertoIP(u_int32_t ip);
-
+char* convertfrommacbytetomacstring(u_char* mac);
 void print_mac_address(u_char* mac);
 
 void pp(char*x);

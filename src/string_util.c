@@ -100,6 +100,12 @@ void print_mac_address(u_char* mac){
 	fflush(stdout);
 }
 
+char* convertfrommacbytetomacstring(u_char* mac){
+	char *ret = (char*)malloc(256);
+	sprintf(ret,"\n%02X:%02X:%02X:%02X:%02X:%02X\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	return ret;
+}
+
 char* convertfromintegertoIP(u_int32_t ip){
 	char *x = (char*)malloc(256*sizeof(char));
 	struct in_addr ip_addr;

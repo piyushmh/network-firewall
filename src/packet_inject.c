@@ -13,11 +13,11 @@
 
 int inject_packet( u_char* packet, size_t length ,
 		enum PROTOCOL protocol, struct network_interface sourceinterface,
-		struct network_interface destinterface){
+		struct network_interface destinterface, u_int32_t destip){
 
 	struct sniff_ethernet* eth = (struct sniff_ethernet*)packet;
 
-	u_char* ethernetcard = "74:d0:2b:47:de:17";
+	char* ethernetcard = "74:d0:2b:47:de:17";
 	u_char nsrcMacAddress[ETHER_ADDR_LEN];
 	hwaddr_aton(ethernetcard, nsrcMacAddress);
 	//u_char* sourcemac = find_macaddr_network_interface(destinterface);

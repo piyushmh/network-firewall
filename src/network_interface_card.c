@@ -118,7 +118,11 @@ struct network_interface* get_network_interface(char* devname, char* macaddr){
 	u_char* macAddress = (u_char*)malloc(ETHER_ADDR_LEN*sizeof(u_char));
 	hwaddr_aton(nic->macaddrstring, macAddress);
 	memmove(nic->macaddress, macAddress, ETHER_ADDR_LEN);
-
+	nic->arp_cache = NULL; //Initialize the arp cache to null, UTHASH would initialize it properly
+	if (pthread_rwlock_init(&(nic->lock),NULL) != 0){
+		pp("Cannot initialize read write lock for device, exiting thread");
+		exit(1);
+	}
 	return nic;
 
 }
@@ -150,8 +154,7 @@ int match_ip_to_subnet_mask(char* ip, char* maskip, char* devip){
 
 }
 
-struct network_interface* find_macaddr_from_ip(u_int32_t ip){
-	//pp("XX");
+struct network_interface* find_nic_from_ip(u_int32_t ip){
 	int ctr = 0;
 	struct network_interface* iter = interface_list[ctr];
 	while(iter!=NULL){

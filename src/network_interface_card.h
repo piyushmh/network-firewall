@@ -11,6 +11,8 @@
 #include <netinet/if_ether.h>
 #include <pcap.h>
 
+struct arp_cache_entry;
+
 struct network_interface{
 	char devname[20];
 	bpf_u_int32 mask;       /* netmask */
@@ -18,6 +20,8 @@ struct network_interface{
 	pcap_t *handle;
 	u_char macaddress[ETHER_ADDR_LEN]; /*Mac address*/
 	char macaddrstring[256];
+	struct arp_cache_entry* arp_cache;
+	pthread_rwlock_t lock;
 };
 
 
@@ -30,7 +34,7 @@ void initialize_start_interfaces();
 void print_network_interface(struct network_interface nic);
 int match_ip_to_subnet_mask(char* ip, char* maskip, char* devip);
 int match_ip_to_subnet_mask_integers(u_int32_t ip, int mask, u_int32_t devip);
-u_char* find_macaddr_from_ip(u_int32_t ip);
+struct network_interface* find_nic_from_ip(u_int32_t ip);
 
 
 struct network_interface* interface_list[10];

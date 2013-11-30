@@ -13,7 +13,7 @@
 
 int inject_packet( u_char* packet, size_t length ,
 		enum PROTOCOL protocol, struct network_interface sourceinterface,
-		struct network_interface destinterfacep);
+		struct network_interface destinterfacep, u_int32_t destip);
 
 void inject_tcp_packet();
 void inject_udp_packet();

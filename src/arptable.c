@@ -7,26 +7,128 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
+#include <pthread.h>
+
 #include "arptable.h"
 #include "network_interface_card.h"
+#include "uthash.h"
+#include "string_util.h"
 
-void arp_table_initialize(){
+#define CACHE_VALID_TIME_SEC 60
 
+
+struct arp_cache_entry* make_arp_cache_entry(const u_int32_t ip, const u_char* macaddress){
+	struct arp_cache_entry* entry =
+			(struct arp_cache_entry*)malloc(sizeof(struct arp_cache_entry));
+	entry->ip = ip;
+	memcpy(entry->macaddress, macaddress,ETHER_ADDR_LEN);
+	return entry;
 }
 
+/*Add entry in the ARP cache present in the NIC passed
+ * Duplicacy check is made internally*/
+void add_entry_in_arp_cache(const u_int32_t ip,const u_char* macaddress,
+		struct network_interface* nic){
 
-u_char etho_mac[6] = {0x0d, 0x0e, 0x0a, 0x0d, 0x00, 0x00};
-
-//Hard coding this for time being
-u_char* find_macaddr_network_interface(struct network_interface card){
-
-	if(strcmp(card.devname, "eth0")==0){
-		return etho_mac;
+	if (pthread_rwlock_wrlock(&(nic->lock)) != 0){
+		pp("Cant acquire write lock on the arp cache");
 	}
-	return NULL;
+	struct arp_cache_entry* entry = NULL;
+	HASH_FIND_INT(nic->arp_cache, &ip, entry);
+	if( entry == NULL){
+		entry = make_arp_cache_entry(ip, macaddress);
+		HASH_ADD_INT(nic->arp_cache,ip,entry);
+	}
+	memcpy(entry->macaddress, macaddress, ETHER_ADDR_LEN);
+	pthread_rwlock_unlock(&(nic->lock));
 }
 
-void find_macaddr_ip(){
+int get_macaddrr_arp_request(struct network_interface* nic, const u_int32_t ip){
 
+	int retval = 0;
+	FILE* f;
+	char command[256];
+	char* ipstring = convertfromintegertoIP(ip);
+	sprintf(command, "arping -I %s -c 1 -w 0.01 %s | awk 'NR==2' | awk '{print $5}'", nic->devname, ipstring);
+	f = popen(command, "r");
+	if(!f){
+		pp("Error while sending arp ping, check!!");
+	}else{
+		char output[256];
+		fscanf(f, "%s", output);
+		if(strlen(output) == 19){ //This means a valid response
+			int i;
+			for(i=1;i<=19;i++){
+				output[i-1] = output[i];
+			}
+			output[17] = '\0';
+			u_char* macaddress = (u_char*)malloc(sizeof(ETHER_ADDR_LEN));
+			hwaddr_aton(output,macaddress);
+			add_entry_in_arp_cache(ip, macaddress, nic);
+			retval = 1;
+		}
+	}
+
+	if(pclose(f)!=0){
+		pp("Error while opening the output stream while sending the arp packet");
+	}
+	return retval;
+}
+
+
+/*Returns an ARP entry if its is found, other wise returns NULL*/
+struct arp_cache_entry* read_entry_from_arp_cache(
+		const u_int32_t ip, struct network_interface* nic){
+
+	if (pthread_rwlock_rdlock(&(nic->lock)) != 0){
+		pp("Cant acquire read lock on the arp cache");
+	}
+	struct arp_cache_entry* entry = NULL;
+	HASH_FIND_INT(nic->arp_cache, &ip, entry);
+
+	pthread_rwlock_unlock(&(nic->lock));
+	return entry;
+
+}
+
+/* Returns mac address if present in the cache,
+ * otherwise fetches the mac address through ARP call,
+ * inserts it into the cache and returns it
+ * Returns NULL otherwise*/
+u_char* get_macaddr_from_ip_arpcache(const u_int32_t ip,
+		struct network_interface* nic){
+
+	int arp_call_needed = 0;
+	int valid_mac_found  = 0;
+	u_char* macaddrret = macaddrret = (u_char*)malloc(sizeof(ETHER_ADDR_LEN));
+
+	struct arp_cache_entry* entry = read_entry_from_arp_cache(ip,nic);
+
+	if( entry == NULL){
+		arp_call_needed = 1;
+	}else{
+		clock_t currtime = clock();
+		long long timediff = (currtime - entry->timestamp)/CLOCKS_PER_SEC;
+		if( timediff > 60){
+			arp_call_needed = 1;
+		}
+	}
+	if( arp_call_needed == 0){
+		valid_mac_found = 1;
+		memcpy(macaddrret, entry->macaddress, ETHER_ADDR_LEN);
+	}else{
+		get_macaddrr_arp_request(nic, ip);
+		entry = read_entry_from_arp_cache(ip,nic);
+		if( entry != NULL){
+			valid_mac_found = 1;
+			memcpy(macaddrret, entry->macaddress, ETHER_ADDR_LEN);
+		}
+	}
+
+	if (valid_mac_found == 1)
+		return macaddrret;
+	else
+		return NULL;
 }
 

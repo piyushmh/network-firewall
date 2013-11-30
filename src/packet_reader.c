@@ -108,7 +108,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     	return; //do nothing, this was a injected packet
     }
 
-    destnic = find_macaddr_from_ip(destip);
+    destnic = find_nic_from_ip(destip);
     //print_mac_address(calcdestmac);
 
     if(destnic == NULL){
@@ -127,7 +127,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     		sourcemac, destmac);
 
     if(result == 1){//ALLOW
-    	int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic,destnic, destip);
+    	int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic, *destnic, destip);
     	if(res==1){
     		printf("Injection done\n");
     	}
