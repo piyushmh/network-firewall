@@ -102,7 +102,7 @@ void print_mac_address(u_char* mac){
 
 char* convertfrommacbytetomacstring(u_char* mac){
 	char *ret = (char*)malloc(256);
-	sprintf(ret,"\n%02X:%02X:%02X:%02X:%02X:%02X\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	sprintf(ret,"%02X:%02X:%02X:%02X:%02X:%02X",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	return ret;
 }
 

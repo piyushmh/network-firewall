@@ -12,19 +12,18 @@
 #include "string_util.h"
 
 int inject_packet( u_char* packet, size_t length ,
-		enum PROTOCOL protocol, struct network_interface sourceinterface,
-		struct network_interface destinterface, u_int32_t destip){
+		enum PROTOCOL protocol, struct network_interface* sourceinterface,
+		struct network_interface* destinterface, u_int32_t destip){
 
 	struct sniff_ethernet* eth = (struct sniff_ethernet*)packet;
 
-	char* ethernetcard = "74:d0:2b:47:de:17";
-	u_char nsrcMacAddress[ETHER_ADDR_LEN];
-	hwaddr_aton(ethernetcard, nsrcMacAddress);
-	//u_char* sourcemac = find_macaddr_network_interface(destinterface);
-	memcpy(eth->ether_shost,nsrcMacAddress, ETHER_ADDR_LEN);
-    printf("%02X:%02X:%02X:%02X:%02X:%02X\n",nsrcMacAddress[0],nsrcMacAddress[1],nsrcMacAddress[2],nsrcMacAddress[3],nsrcMacAddress[4],nsrcMacAddress[5]);
-	if(pcap_inject(destinterface.handle, packet, length) == -1){
-		pcap_close(destinterface.handle);
+	u_char* finalsourcemac = destinterface->macaddress;
+	u_char* finaldestmac = get_macaddr_from_ip_arpcache(destip, destinterface);
+	memcpy(eth->ether_shost,finalsourcemac, ETHER_ADDR_LEN);
+	memcpy(eth->ether_dhost,finaldestmac, ETHER_ADDR_LEN);
+    //printf("%02X:%02X:%02X:%02X:%02X:%02X\n",nsrcMacAddress[0],nsrcMacAddress[1],nsrcMacAddress[2],nsrcMacAddress[3],nsrcMacAddress[4],nsrcMacAddress[5]);
+	if(pcap_inject(destinterface->handle, packet, length) == -1){
+		pcap_close(destinterface->handle);
 		printf("PCAP Injection failed");
 		return 0;
 	}

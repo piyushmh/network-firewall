@@ -19,7 +19,12 @@ int main(){
 	char str[] = "192.168.0.1";
 	inet_pton(AF_INET, str,&s);
 	u_char* v = get_macaddr_from_ip_arpcache(s.s_addr,nic);
+	printf("%s\n",v==NULL?"NULL":v);
+	strcpy(str,"192.168.0.12");
+	inet_pton(AF_INET, str,&s);
+	v = get_macaddr_from_ip_arpcache(s.s_addr,nic);
 	printf("%s\n",v);
+
 	v = get_macaddr_from_ip_arpcache(s.s_addr,nic);
 	printf("%s\n",v);
 

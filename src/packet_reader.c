@@ -9,6 +9,7 @@
 #include "apply_rule.h"
 #include "network_interface_card.h"
 #include "string_util.h"
+#include "network_flow.h"
 
 void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 			const u_char *packet){
@@ -34,9 +35,8 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     u_short destport = 0;
     
     struct pcap_handler_argument* arg = (struct pcap_handler_argument*)args;
-    printf("Reading packet from interface :%s\n", arg->source.devname);
-    //printf("Injecting into interface :%s\n", arg->dest.devname);
-    struct network_interface sourcenic = arg->source;
+    printf("Reading packet from interface :%s\n", arg->source->devname);
+    struct network_interface* sourcenic = arg->source;
 
     ethernet = (struct sniff_ethernet*)(packet);
 
@@ -103,7 +103,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     }
 
 
-    if( memcmp(sourcemac, sourcenic.macaddress,ETHER_ADDR_LEN) == 0){//match
+    if( memcmp(sourcemac, sourcenic->macaddress,ETHER_ADDR_LEN) == 0){//match
     	pp("Injected packet found\n");
     	return; //do nothing, this was a injected packet
     }
@@ -115,23 +115,62 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
     	pp("No network interface found with this IP, returning");
     	return;
     }
-    if(memcmp(destnic->macaddress, sourcenic.macaddress, ETHER_ADDR_LEN) == 0){
+    if(memcmp(destnic->macaddress, sourcenic->macaddress, ETHER_ADDR_LEN) == 0){
     	pp("\nLocal area network packet found");
     	//return; //this mean this packet belong to the same local network
     }
 
-    //Check if this packet is part of a open connection or not
-    print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
-    int result = traverse_rule_matrix(
-    		protocol, sourceip, destip, sourceport, destport,
-    		sourcemac, destmac);
 
-    if(result == 1){//ALLOW
-    	int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic, *destnic, destip);
+    /*
+     * 1. If packet is part of open connection
+     * 		- Update flow,if packet is valid let it through otherwise block
+     * 2. Else, apply rules
+     * 		- If rules failes, block the packet
+     * 		- Else, rules passes, update flow.
+     * 			- If packet is valid, let it through
+     * 			- Otherwise block
+     */
+
+    int res = 0;
+    int update_flow = 0;
+    int block = 1;
+
+    if( protocol == TCP){
+    	res = is_packet_part_of_open_connection(
+    			sourceip, destip, sourceport, destport);
+
+    	if( res == 0){
+    		int rule_apply = traverse_rule_matrix(
+    				protocol, sourceip, destip, sourceport, destport,
+    	    		sourcemac, destmac);
+    		if( rule_apply == 0){
+    			update_flow = 1;
+    		}
+    	}else{
+    		update_flow = 1;
+    	}
+
+    	if( update_flow == 1){
+    		int result = add_packet_to_network_flow();
+    		if( result ==1)
+    			block =0;
+    	}
+    }else{ //ICMP, UDP
+    	int rule_apply = traverse_rule_matrix(
+    	    	protocol, sourceip, destip, sourceport, destport,
+    	    	sourcemac, destmac);
+    	if( rule_apply == 1)
+    		block = 0;
+    }
+
+    print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
+
+    if(block == 0){//ALLOW
+    	int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic, destnic, destip);
     	if(res==1){
     		printf("Injection done\n");
     	}
-    }else if ( result == 0){ //BLOCK,throw away the packet
+    }else{ //BLOCK,throw away the packet
     	printf("Packet blocked");
     }
 	return;
@@ -144,7 +183,8 @@ void *read_packets(void *nic){
 	//print_network_interface(*interface);
 	//while(1){}
 	struct pcap_handler_argument arg;
-	arg.source = *interface;
+	arg.source = interface;
+	arg.dest = NULL;
 	int val = pcap_loop(interface->handle, 1, disassemble_packet, (void*)(&arg));
 	printf("%d\n", val);
 	/* And close the session */

@@ -13,7 +13,7 @@
 #include "network_interface_card.h"
 
 struct arp_cache_entry{
-	u_int32_t ip;
+	u_int32_t ip; //Used for hashin
 	u_char macaddress[ETHER_ADDR_LEN];
 	clock_t timestamp;
 	UT_hash_handle hh;

@@ -26,8 +26,8 @@ struct network_interface{
 
 
 struct pcap_handler_argument{
-	struct network_interface source;
-	struct network_interface dest;
+	struct network_interface* source;
+	struct network_interface* dest;
 };
 
 void initialize_start_interfaces();
