@@ -12,6 +12,7 @@
 
 #include "uthash.h"
 
+
 struct connection{
     u_int32_t source_ip;
     u_int32_t dest_ip;
@@ -19,15 +20,18 @@ struct connection{
     u_short dest_port;
     int is_conn_init; //on if state >0
     int is_conn_active;//on if state > 2
+    int is_conn_teardown;
     int state;
     /* States -
 		0 - DEAD
 		1 - SYN
 		2 - SYNACK
 		3 - ACK
-		4 - FIN_INITIATED
-		5 - FIN_ACKNOWLEDGED
-		6 - RST TEARDOWN
+		4 - FIN
+		5 - FINFIN
+		6 - FINACK
+		7 - FINFINACK
+		8 - TERMINATED (FINFINACKACK Done)
     */
     u_int32_t key;  //this would be source+ip+source_port+dest_port
     UT_hash_handle hh;
@@ -50,6 +54,7 @@ struct host_node{
     UT_hash_handle hh;
 };
 
+pthread_rwlock_t flowmap_lock;
 struct host_node* flowmap;
 
 void initialize_network_flow();
