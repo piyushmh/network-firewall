@@ -5,8 +5,11 @@
 #include "apply_rule.h"
 #include <stdio.h>
 #include "string_util.h"
-int main1(int argc, char** argv){
+#include "network_flow.h"
 
+int main(int argc, char** argv){
+
+	initialize_network_flow();
     initialize_rules(); //read rules of files and initialize system
 	initialize_start_interfaces();
     return(0);

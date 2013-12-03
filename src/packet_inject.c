@@ -19,6 +19,12 @@ int inject_packet( u_char* packet, size_t length ,
 
 	u_char* finalsourcemac = destinterface->macaddress;
 	u_char* finaldestmac = get_macaddr_from_ip_arpcache(destip, destinterface);
+
+	if(finaldestmac == NULL){
+		pp("Can't fetch mac address from ARP cache, returning w/o injecting");
+		return 0;
+	}
+
 	memcpy(eth->ether_shost,finalsourcemac, ETHER_ADDR_LEN);
 	memcpy(eth->ether_dhost,finaldestmac, ETHER_ADDR_LEN);
     //printf("%02X:%02X:%02X:%02X:%02X:%02X\n",nsrcMacAddress[0],nsrcMacAddress[1],nsrcMacAddress[2],nsrcMacAddress[3],nsrcMacAddress[4],nsrcMacAddress[5]);

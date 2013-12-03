@@ -150,7 +150,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 			int rule_apply = traverse_rule_matrix(
 					protocol, sourceip, destip, sourceport, destport,
 					sourcemac, destmac);
-			if( rule_apply == 0){
+			if( rule_apply == 1){
 				update_flow = 1;
 			}
 		}else{
@@ -159,7 +159,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 
 		if( update_flow == 1){
 			if (pthread_rwlock_wrlock(&(flowmap_lock)) != 0){
-				pp("Can't acquire read lock on flowmap, check what happened!!");
+				pp("Can't acquire write lock on flowmap, check what happened!!");
 				return;
 			}
 			int result = add_packet_to_network_flow(

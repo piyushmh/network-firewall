@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include "string_util.h"
 
-int main(){
+int main2(){
 
 	char x[]= "74:d0:2b:47:de:17";
 	u_char* c = (u_char*)malloc(sizeof(6));
@@ -23,10 +23,10 @@ int main(){
 	strcpy(str,"192.168.0.12");
 	inet_pton(AF_INET, str,&s);
 	v = get_macaddr_from_ip_arpcache(s.s_addr,nic);
-	printf("%s\n",v);
+	printf("%s\n",v==NULL?"NULL":v);
 
 	v = get_macaddr_from_ip_arpcache(s.s_addr,nic);
-	printf("%s\n",v);
+	printf("%s\n",v==NULL?"NULL":v);
 
 	struct arp_cache_entry* q;
 	for (q = nic->arp_cache; q!=NULL; q= q->hh.next){
