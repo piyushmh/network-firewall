@@ -15,6 +15,7 @@
 #include "network_interface_card.h"
 #include "string_util.h"
 #include "packet_reader.h"
+#include "interactive_shell.h"
 
 struct network_interface* get_network_interface(char* devname, char* macaddr);
 
@@ -59,10 +60,13 @@ void initialize_start_interfaces(){
 		}
 
 		struct network_interface* nic = get_network_interface(devname,macaddr);
+		print_network_interface(*nic);
 		interface_list[numthreads] = nic;
 		pthread_create(&threads[numthreads++], NULL, read_packets, (void*)nic);
 
 	}
+
+	start_shell();
 
 	interface_list[numthreads] = NULL;
 	int i;
@@ -85,7 +89,7 @@ struct network_interface* get_network_interface(char* devname, char* macaddr){
 	pcap_t *sourcehandle;         /* Source Session handle */
 	char errbuf[PCAP_ERRBUF_SIZE];  /* Error string */
 	struct bpf_program fp;      /* The compiled filter */
-	char filter_exp[] = "tcp";  /* The filter expression */
+	char filter_exp[] = "icmp or udp or tcp";  /* The filter expression */
 	bpf_u_int32 mask;           /* Our net mask */
 	bpf_u_int32 net;            /* Our IP */
 

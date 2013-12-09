@@ -84,13 +84,15 @@ int hwaddr_aton(const char *txt, u_char *addr)
 }
 
 void print_packet(u_int32_t sourceip, u_int32_t destip,
-		int sourceport, int destport, u_char* sourcemac, u_char* destmac){
+		int sourceport, int destport, u_char* sourcemac, u_char* destmac,
+		enum PROTOCOL protocol){
 	printf("\nSouceIP :%s\n", convertfromintegertoIP(sourceip));
 	printf("DestIP :%s\n", convertfromintegertoIP(destip));
 	printf("Souceport :%d\n", sourceport);
 	printf("Destport :%d\n", destport);
 	printf("SourceMac :%s\n", sourcemac);
 	printf("DestMac :%s\n", destmac);
+	printf("Prototype :%d\n", protocol);
 	fflush(stdout);
 
 }

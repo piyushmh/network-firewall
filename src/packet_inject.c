@@ -15,6 +15,7 @@ int inject_packet( u_char* packet, size_t length ,
 		enum PROTOCOL protocol, struct network_interface* sourceinterface,
 		struct network_interface* destinterface, u_int32_t destip){
 
+	printf("\nInside inject packet");
 	struct sniff_ethernet* eth = (struct sniff_ethernet*)packet;
 
 	u_char* finalsourcemac = destinterface->macaddress;
@@ -27,7 +28,10 @@ int inject_packet( u_char* packet, size_t length ,
 
 	memcpy(eth->ether_shost,finalsourcemac, ETHER_ADDR_LEN);
 	memcpy(eth->ether_dhost,finaldestmac, ETHER_ADDR_LEN);
-    //printf("%02X:%02X:%02X:%02X:%02X:%02X\n",nsrcMacAddress[0],nsrcMacAddress[1],nsrcMacAddress[2],nsrcMacAddress[3],nsrcMacAddress[4],nsrcMacAddress[5]);
+
+	pp("\nInjecting the following ether header");
+	//print_ethernet_header(packet);
+
 	if(pcap_inject(destinterface->handle, packet, length) == -1){
 		pcap_close(destinterface->handle);
 		printf("PCAP Injection failed");

@@ -9,8 +9,8 @@
 #include <pcap.h>
 #include <stdio.h>
 #include <netinet/if_ether.h>
+#include "firewall_rules.h"
 
-enum PROTOCOL {ARP, TCP, UDP, ICMP};
 
 //#define ETHER_ADDR_LEN  6 /* Ethernet addresses are 6 bytes */
 #define SIZE_ETHERNET 14 /*Ethernet packet size */

@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv){
 
-	initialize_network_flow();
+	//initialize_network_flow();
     initialize_rules(); //read rules of files and initialize system
 	initialize_start_interfaces();
     return(0);

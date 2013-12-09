@@ -17,7 +17,11 @@
 #include "string_util.h"
 
 #define MINPRIORITY 9
+
+//Change this later to one list per interface
 struct firewall_rule* rules[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+int next_rule_id;
+
 
 
 char rule_file_path[] = "/home/piyush/dcn/project_final/NetworkFirewall/src/rules.txt";
@@ -37,7 +41,10 @@ struct firewall_rule* makerulenode(){
 
 	struct firewall_rule* rulenode =
 			(struct firewall_rule*)malloc(sizeof(struct firewall_rule));
-
+	rulenode->id = next_rule_id;
+	next_rule_id +=1; //Increment the rule_id to next value
+	rulenode->protocol = ALL;
+	rulenode->is_active = 1;
 	rulenode->sourceip  = 0;
 	rulenode->sourceipmask =0;
 	rulenode->destip = 0;
@@ -56,7 +63,8 @@ struct firewall_rule* makerulenode(){
 /*
  * Make rule from the rule string
  * This method parses the rule string into its
- * corresponding elements
+ * corresponding elements. Null value means that
+ * the rule string was malformed
  */
 struct firewall_rule* makerule(char* rulestring){
 
@@ -91,7 +99,22 @@ struct firewall_rule* makerule(char* rulestring){
 			rule = NULL;
 			break;
 		}
-		if(strcmp(subtoken1,"SRCIP")==0){
+
+		if(strcmp(subtoken1, "PROTOCOL") == 0){
+			if(strcmp(subtoken2,"ANY")){
+				if(strcmp(subtoken2, "TCP")==0)
+					rule->protocol = TCP;
+				else if(strcmp(subtoken2, "UDP")==0)
+					rule->protocol = UDP;
+				else if(strcmp(subtoken2, "ICMP")==0)
+					rule->protocol = ICMP;
+				else{
+					//Add later
+				}
+
+			}
+		}
+		else if(strcmp(subtoken1,"SRCIP")==0){
 
 			if(strcmp(subtoken2,"ANY")){
 				char *saveptr3;
@@ -187,59 +210,78 @@ struct firewall_rule* makerule(char* rulestring){
 }
 
 void print_rule(struct firewall_rule* rule){
-	printf("\nSourceIP :%s\n", convertfromintegertoIP(rule->sourceip));
-	printf("Sourcemask :%d\n", rule->sourceipmask);
-	printf("DestIP :%s\n", convertfromintegertoIP(rule->destip));
-	printf("Destmask :%d\n", rule->destipmask);
-	printf("Sourceportstart :%d\n", rule->sourceportrange.start);
-	printf("Sourceportend :%d\n", rule->sourceportrange.end);
-	printf("Destportstart :%d\n", rule->destportrange.start);
-	printf("Destportend :%d\n", rule->destportrange.end);
-	printf("Action :%d\n", rule->action);
-	printf("Priority :%d\n", rule->priority);
+	if( rule->is_active == 0)
+		return;
+	char proto[16];
+	if(rule->protocol==TCP) strcpy(proto,"TCP");
+	else if (rule->protocol==UDP) strcpy(proto,"UDP");
+	else if (rule->protocol==ICMP) strcpy(proto,"ICMP");
+	else strcpy(proto,"ALL");
+
+	printf("\nID  :%d  ", rule->id);
+	printf("Active :%d  ", rule->is_active);
+	printf("Proto :%s  ", proto);
+	printf("SRCIP :%s  ", convertfromintegertoIP(rule->sourceip));
+	printf("SRCMASK :%d  ", rule->sourceipmask);
+	printf("DSTIP :%s  ", convertfromintegertoIP(rule->destip));
+	printf("DSTMASK :%d  ", rule->destipmask);
+	printf("SRCPORT :%d-%d  ", rule->sourceportrange.start, rule->sourceportrange.end);
+	printf("DSTPORT :%d-%d  ", rule->destportrange.start, rule->destportrange.end);
+	printf("Action :%d  ", rule->action);
+	printf("Priority :%d  ", rule->priority);
 	fflush(stdout);
 }
 
 
 void traverseLL(struct firewall_rule* head){
 	if(head==NULL){
-		printf("Empty shit, returning\n");
+		//printf("No rules\n");
 		return;
 	}
 	while(head!=NULL){
 		print_rule(head);
 		head = head->next;
 	}
-	printf("\n");
+	//printf("\n");
 }
 
 void traverse(){
 	int i;
 	for(i=0;i<=MINPRIORITY;i++){
+		printf("Rules of priority %d", i);
 		struct firewall_rule* head = rules[i];
 		traverseLL(head);
+		printf("\n");
 	}
 }
 
 void initialize_rules(){
 
+	if (pthread_rwlock_init(&(rulelist_lock),NULL) != 0){
+		pp("Cannot initialize read write lock for rule list, exiting thread");
+		exit(1);
+	}
 	FILE *rulefile = NULL;
 	rulefile = fopen(rule_file_path, "r");
+	next_rule_id = 0; //Initializing rule id to 0
 	if(rulefile == NULL){
 		printf("Could open the rules file, no rules would be applied, skipping");
 		return;
 	}
 
-	char* rule;
-	size_t len = 0;
+	char* rule = (char*) malloc(512);
+	char* rule_par = (char*) malloc(512);
+	size_t len = 512;
 	size_t read;
 	while ((read = getline(&rule, &len, rulefile)) != -1) {
 		rule = strstrip(rule);
-		if(strlen(rule)==0)  //For last line
-			continue;
-		struct firewall_rule* x = makerule(rule);
+		strcpy(rule_par, rule);
+		struct firewall_rule* x = makerule(rule_par);
 		if(x!=NULL){
 			add_rule_to_list(&rules[x->priority],x);
+			printf("Applied rule :%s\n", rule);
+		}else{
+			printf("Rule malformed, skipping :%s\n", rule);
 		}
 	}
 	//traverse();
@@ -255,16 +297,18 @@ int match_single_rule(struct firewall_rule* rulenode,
 
 	//print_rule(rulenode);
 	int retval = 0;
-	if( match_ip_to_subnet_mask_integers(
-			packetdec.sourceip, rulenode->sourceipmask, rulenode->sourceip)){
+	if ( rulenode->protocol == ALL || rulenode->protocol==packetdec.protocol){
 		if( match_ip_to_subnet_mask_integers(
+				packetdec.sourceip, rulenode->sourceipmask, rulenode->sourceip)){
+			if( match_ip_to_subnet_mask_integers(
 					packetdec.destip, rulenode->destipmask, rulenode->destip)){
-			if( packetdec.sourceportrange.start >= rulenode->sourceportrange.start
-					&& packetdec.sourceportrange.start <= rulenode->sourceportrange.end){
-				if( packetdec.destportrange.start >= rulenode->destportrange.start
-						&& packetdec.destportrange.start <= rulenode->destportrange.end){
-					print_rule(rulenode);
-					retval = 1;
+				if( packetdec.sourceportrange.start >= rulenode->sourceportrange.start
+						&& packetdec.sourceportrange.start <= rulenode->sourceportrange.end){
+					if( packetdec.destportrange.start >= rulenode->destportrange.start
+							&& packetdec.destportrange.start <= rulenode->destportrange.end){
+						print_rule(rulenode);
+						retval = 1;
+					}
 				}
 			}
 		}
@@ -276,12 +320,13 @@ struct firewall_rule* traverse_rule_chain(struct firewall_rule* head,
 		struct firewall_rule packetdes){
 
 	if(head==NULL){
-		//printf("Empty shit, returning\n");
 		return NULL;
 	}
 	while(head!=NULL){
-		if(match_single_rule(head, packetdes)){
-			break;
+		if(head->is_active){
+			if(match_single_rule(head, packetdes)){
+				break;
+			}
 		}
 		head = head->next;
 	}
@@ -298,6 +343,11 @@ int traverse_rule_matrix( enum PROTOCOL proto, u_int32_t sourceip,
 		u_int32_t destip, u_short sourceport, u_short destport,
 		u_char *sourcemac, u_char *destmac){
 
+	if (pthread_rwlock_rdlock(&(rulelist_lock)) != 0){
+		pp("Can't acquire read lock on rule list, check what happened!!");
+		return 0;
+	}
+
 	int returncode = 0; //default action is  block everything
 
 	struct firewall_rule packetdes;
@@ -313,6 +363,7 @@ int traverse_rule_matrix( enum PROTOCOL proto, u_int32_t sourceip,
 	memcpy(packetdes.destmacaddr,destmac, ETHER_ADDR_LEN);
 	packetdes.sourceipmask = 0;
 	packetdes.destipmask = 0;
+	packetdes.protocol = proto;
 
 	struct firewall_rule** rulehead = findrulehead(sourceip);
 
@@ -333,8 +384,66 @@ int traverse_rule_matrix( enum PROTOCOL proto, u_int32_t sourceip,
 	}else{
 		//no match means block which the default value of returncode
 	}
-
+	pthread_rwlock_unlock(&(rulelist_lock));
 	return returncode;
 }
 
+int add_rule_to_list_external(char* rule){
+	if (pthread_rwlock_wrlock(&(rulelist_lock)) != 0){
+		pp("Add rule:Can't acquire write lock on rule list, check what happened!!");
+		return 0;
+	}
+	int retvalue;
+	char* rule_param = (char*)malloc(512);
+	strcpy(rule_param, rule);
+	struct firewall_rule* ruleformed = makerule(rule_param);
+	if( ruleformed == NULL){
+		retvalue = 0;
+	}else{
+		retvalue = 1;
+		if( ruleformed->priority >=0 && ruleformed->priority <= MINPRIORITY)
+			add_rule_to_list(&rules[ruleformed->priority],ruleformed);
+		else
+			retvalue = 0;
+	}
+	pthread_rwlock_unlock(&(rulelist_lock));
+	return retvalue;
+}
 
+
+int _mark_rule_inactive_ll(struct firewall_rule* head, const int ruleid){
+	if (pthread_rwlock_wrlock(&(rulelist_lock)) != 0){
+		pp("Mark rule inactive:Can't acquire write lock on rule list, check what happened!!");
+		return 0;
+	}
+	int retval = 0;
+	if(head==NULL){
+		return retval;
+	}
+	while(head!=NULL){
+		if(head->id == ruleid){
+			head->is_active = 0;
+			retval = 1;
+		}
+		head = head->next;
+	}
+	pthread_rwlock_unlock(&(rulelist_lock));
+	return retval;
+}
+
+int mark_rule_as_inactive(int ruleid){
+	int retval = 0;
+	int i;
+	for(i=0; i<=MINPRIORITY;i++){
+		int val = _mark_rule_inactive_ll(rules[i], ruleid);
+		if(val){
+			retval = 1;
+			break;
+		}
+	}
+	return retval;
+}
+
+void print_all_rules(){
+	traverse();
+}

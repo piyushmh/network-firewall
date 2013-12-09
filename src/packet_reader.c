@@ -11,6 +11,14 @@
 #include "string_util.h"
 #include "network_flow.h"
 
+void print_ethernet_header(u_char* p){
+	struct sniff_ethernet* packet = (struct sniff_ethernet*)p;
+	printf("\nDestination Mac :%s\n", convertfrommacbytetomacstring(packet->ether_dhost));
+	printf("Source Mac :%s\n", convertfrommacbytetomacstring(packet->ether_shost));
+	printf("Ether type :%d\n", packet->ether_type);
+	return;
+}
+
 void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		const u_char *packet){
 
@@ -21,7 +29,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	struct sniff_udp *udp;
 	u_char *payload; /* Packet payload */
 	enum PROTOCOL protocol;
-	u_int32_t packetlen = header->len;
+	u_int32_t packetlen = header->caplen;
 
 	u_int size_network;
 	u_int size_transport;
@@ -39,6 +47,9 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	struct network_interface* sourcenic = arg->source;
 
 	ethernet = (struct sniff_ethernet*)(packet);
+
+	pp("Printing received ether header");
+	print_ethernet_header((u_char*)packet);
 
 	/* Now find which type of packet we got ICMP, TCP, UDP etc */
 	memcpy(sourcemac, ethernet->ether_shost, ETHER_ADDR_LEN);
@@ -91,12 +102,15 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		//handle this later
 	}
 
-	print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
+
+	print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
+	/*
 	sourceip = (uint32_t)inet_addr("192.168.0.14");
 	destip = (uint32_t)inet_addr("192.168.0.10");
 	sourceport = 23;
 	destport = 34;
 	hwaddr_aton("6c:71:d9:6a:74:46",sourcemac);
+	*/
 
 	if( protocol == ARP){
 		//Add into arp table
@@ -117,7 +131,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	}
 	if(memcmp(destnic->macaddress, sourcenic->macaddress, ETHER_ADDR_LEN) == 0){
 		pp("\nLocal area network packet found");
-		//return; //this mean this packet belong to the same local network
+		return; //this mean this packet belong to the same local network
 	}
 
 
@@ -174,11 +188,12 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		int rule_apply = traverse_rule_matrix(
 				protocol, sourceip, destip, sourceport, destport,
 				sourcemac, destmac);
+		printf("Inside packet reader, found packet ICMP/UDP with apply :%d\n", rule_apply);
 		if( rule_apply == 1)
 			block = 0;
 	}
 
-	print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
+	//print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
 
 	if(block == 0){//ALLOW
 		int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic, destnic, destip);
@@ -200,7 +215,7 @@ void *read_packets(void *nic){
 	struct pcap_handler_argument arg;
 	arg.source = interface;
 	arg.dest = NULL;
-	int val = pcap_loop(interface->handle, 1, disassemble_packet, (void*)(&arg));
+	int val = pcap_loop(interface->handle, -1, disassemble_packet, (void*)(&arg));
 	printf("%d\n", val);
 	/* And close the session */
 	pcap_close(interface->handle);

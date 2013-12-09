@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 enum ACTION{BLOCK, PASS};
-
+enum PROTOCOL {ALL,ARP, TCP, UDP, ICMP};
 enum RULE_ATTR { SRCIP, SRCPORT, DSTIP, DSTPORT, PRIORITY};
 
 struct portrange{
@@ -21,6 +21,8 @@ struct portrange{
 };
 
 struct firewall_rule{
+	int id;
+	int is_active;
 	u_int32_t sourceip;
 	u_int32_t destip;
 	struct portrange sourceportrange;
@@ -34,7 +36,7 @@ struct firewall_rule{
 	char sourcemacaddr[20];
 	char destmacaddr[20];
 	enum ACTION action;
-
+	enum PROTOCOL protocol;
 	struct firewall_rule* next;
 	struct firewall_rule* prev;
 

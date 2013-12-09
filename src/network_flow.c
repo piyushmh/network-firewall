@@ -294,11 +294,11 @@ void print_host_node(struct host_node* hostnode){
 void print_connection(struct connection* conn){
 	printf("\nSource IP :%s\n", convertfromintegertoIP(conn->source_ip));
 	printf("Dest IP :%s\n", convertfromintegertoIP(conn->dest_ip));
-	printf("Source port :%d\n", convertfromintegertoIP(conn->source_port));
-	printf("Dest port :%d\n", convertfromintegertoIP(conn->dest_port));
-	printf("Conn active :%d\n", convertfromintegertoIP(conn->is_conn_active));
-	printf("Conn init :%d\n", convertfromintegertoIP(conn->is_conn_init));
-	printf("Conn tear :%d\n", convertfromintegertoIP(conn->is_conn_teardown));
-	printf("State :%d\n", convertfromintegertoIP(conn->state));
+	printf("Source port :%d\n", conn->source_port);
+	printf("Dest port :%d\n", conn->dest_port);
+	printf("Conn active :%d\n", conn->is_conn_active);
+	printf("Conn init :%d\n", conn->is_conn_init);
+	printf("Conn tear :%d\n", conn->is_conn_teardown);
+	printf("State :%d\n", conn->state);
 }
 
