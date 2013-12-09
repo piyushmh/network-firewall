@@ -21,7 +21,7 @@
 //Change this later to one list per interface
 struct firewall_rule* rules[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
 int next_rule_id;
-
+pthread_rwlock_t rulelist_lock;
 
 
 char rule_file_path[] = "/home/piyush/dcn/project_final/NetworkFirewall/src/rules.txt";
@@ -257,6 +257,7 @@ void traverse(){
 
 void initialize_rules(){
 
+
 	if (pthread_rwlock_init(&(rulelist_lock),NULL) != 0){
 		pp("Cannot initialize read write lock for rule list, exiting thread");
 		exit(1);
@@ -306,7 +307,7 @@ int match_single_rule(struct firewall_rule* rulenode,
 						&& packetdec.sourceportrange.start <= rulenode->sourceportrange.end){
 					if( packetdec.destportrange.start >= rulenode->destportrange.start
 							&& packetdec.destportrange.start <= rulenode->destportrange.end){
-						print_rule(rulenode);
+						//print_rule(rulenode);
 						retval = 1;
 					}
 				}
@@ -417,9 +418,6 @@ int _mark_rule_inactive_ll(struct firewall_rule* head, const int ruleid){
 		return 0;
 	}
 	int retval = 0;
-	if(head==NULL){
-		return retval;
-	}
 	while(head!=NULL){
 		if(head->id == ruleid){
 			head->is_active = 0;

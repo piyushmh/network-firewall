@@ -34,16 +34,15 @@ void start_shell(){
 				char* rule = (char*) malloc(512);
 				size_t len = 512;
 				getline(&rule, &len, stdin);
-				int result = 1;
+				int result = add_rule_to_list_external(rule);
 				if( result ==1){
-					add_rule_to_list_external(rule);
 					printf("Yay rule applied.\n");
 				}else{
 					printf("Malformed rule, skipping\n");
 				}
 				free(rule);
 			}else if( strcmp(command,"D")==0){
-				int ruleid = 0;
+				int ruleid = -1;
 				printf("Please enter a valid rule id to delete :");
 				scanf("%d", &ruleid);
 				getchar();
@@ -59,7 +58,7 @@ void start_shell(){
 				printf("Good bye\n");
 				break;
 			}else{
-				printf("I have no idea what you mean but the answer is 42\n");
+				printf("I have no idea what you're saying but the answer is 42\n");
 			}
 		}
 		return;

@@ -132,10 +132,6 @@ struct network_interface* get_network_interface(char* devname, char* macaddr){
 }
 
 int match_ip_to_subnet_mask_integers(u_int32_t ip, int mask, u_int32_t devip){
-	//pp("VVV");
-	//pi(ip);
-	//pi(mask);
-	//pi(devip);
 	int m= ((1L)<<(mask))-1;
 	if((ip&m) == (devip&m))
 		return 1;

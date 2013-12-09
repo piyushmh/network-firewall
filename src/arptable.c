@@ -23,6 +23,7 @@ struct arp_cache_entry* make_arp_cache_entry(const u_int32_t ip, const u_char* m
 			(struct arp_cache_entry*)malloc(sizeof(struct arp_cache_entry));
 	entry->ip = ip;
 	memcpy(entry->macaddress, macaddress,ETHER_ADDR_LEN);
+	entry->timestamp = time(NULL);
 	return entry;
 }
 
@@ -41,6 +42,7 @@ void add_entry_in_arp_cache(const u_int32_t ip,const u_char* macaddress,
 		HASH_ADD_INT(nic->arp_cache,ip,entry);
 	}
 	memcpy(entry->macaddress, macaddress, ETHER_ADDR_LEN);
+	entry->timestamp = time(NULL);
 	pthread_rwlock_unlock(&(nic->lock));
 }
 
@@ -99,6 +101,7 @@ struct arp_cache_entry* read_entry_from_arp_cache(
 u_char* get_macaddr_from_ip_arpcache(const u_int32_t ip,
 		struct network_interface* nic){
 
+	//printf("Trying to get mac address of %s from interface %s \n",convertfromintegertoIP(ip), nic->devname);
 	int arp_call_needed = 0;
 	int valid_mac_found  = 0;
 	u_char* macaddrret = macaddrret = (u_char*)malloc(sizeof(ETHER_ADDR_LEN));
@@ -108,16 +111,20 @@ u_char* get_macaddr_from_ip_arpcache(const u_int32_t ip,
 	if( entry == NULL){
 		arp_call_needed = 1;
 	}else{
-		clock_t currtime = clock();
-		long long timediff = (currtime - entry->timestamp)/CLOCKS_PER_SEC;
+		time_t currtime = time(NULL);
+		long long timediff = difftime(currtime,entry->timestamp);
+		//printf("Cache address: %p\n", entry);
+		//printf("\nC: %ld  S: %ld Diff :%ld\n", currtime, entry->timestamp, timediff);
 		if( timediff > 60){
 			arp_call_needed = 1;
 		}
 	}
 	if( arp_call_needed == 0){
+		pp("Successfully fetched from cache");
 		valid_mac_found = 1;
 		memcpy(macaddrret, entry->macaddress, ETHER_ADDR_LEN);
 	}else{
+		pp("Sending ARP request to get MAC");
 		get_macaddrr_arp_request(nic, ip);
 		entry = read_entry_from_arp_cache(ip,nic);
 		if( entry != NULL){

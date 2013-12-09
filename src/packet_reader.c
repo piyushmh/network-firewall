@@ -22,7 +22,6 @@ void print_ethernet_header(u_char* p){
 void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		const u_char *packet){
 
-	printf("%s\n", "Got a packet");
 	struct sniff_ethernet *ethernet; /* The ethernet header */
 	struct sniff_ip *ip; /* The IP header */
 	struct sniff_tcp *tcp; /* The TCP header */
@@ -43,13 +42,12 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	u_short destport = 0;
 
 	struct pcap_handler_argument* arg = (struct pcap_handler_argument*)args;
-	printf("Reading packet from interface :%s\n", arg->source->devname);
 	struct network_interface* sourcenic = arg->source;
-
+	//printf("*****Got a packet on interface %s*****\n",arg->source->devname);
 	ethernet = (struct sniff_ethernet*)(packet);
 
-	pp("Printing received ether header");
-	print_ethernet_header((u_char*)packet);
+	//pp("Printing received ether header");
+	//print_ethernet_header((u_char*)packet);
 
 	/* Now find which type of packet we got ICMP, TCP, UDP etc */
 	memcpy(sourcemac, ethernet->ether_shost, ETHER_ADDR_LEN);
@@ -103,7 +101,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	}
 
 
-	print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
+	//print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
 	/*
 	sourceip = (uint32_t)inet_addr("192.168.0.14");
 	destip = (uint32_t)inet_addr("192.168.0.10");
@@ -188,7 +186,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		int rule_apply = traverse_rule_matrix(
 				protocol, sourceip, destip, sourceport, destport,
 				sourcemac, destmac);
-		printf("Inside packet reader, found packet ICMP/UDP with apply :%d\n", rule_apply);
+		//printf("Inside packet reader, found packet ICMP/UDP with apply :%d\n", rule_apply);
 		if( rule_apply == 1)
 			block = 0;
 	}
@@ -198,10 +196,10 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	if(block == 0){//ALLOW
 		int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic, destnic, destip);
 		if(res==1){
-			printf("Injection done\n");
+			pp("Injection done");
 		}
 	}else{ //BLOCK,throw away the packet
-		printf("Packet blocked");
+		pp("Packet blocked");
 	}
 	return;
 }

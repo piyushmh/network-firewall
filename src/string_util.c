@@ -13,6 +13,8 @@
 
 #include "string_util.h"
 
+//#define DEBUG
+
 char *strstrip(char *s){
 	size_t size;
 	char *end;
@@ -33,8 +35,17 @@ char *strstrip(char *s){
 	return s;
 }
 
-void pp(char*x){ printf("%s\n",x); fflush(stdout);}
-void pi(int x){ printf("%d\n",x); fflush(stdout);}
+void pp(char*x){
+#ifdef DEBUG
+	printf("%s\n",x); fflush(stdout);
+#endif
+}
+
+void pi(int x){
+#ifdef DEBUG
+	printf("%d\n",x); fflush(stdout);
+#endif
+}
 
 
 
@@ -90,9 +101,9 @@ void print_packet(u_int32_t sourceip, u_int32_t destip,
 	printf("DestIP :%s\n", convertfromintegertoIP(destip));
 	printf("Souceport :%d\n", sourceport);
 	printf("Destport :%d\n", destport);
-	printf("SourceMac :%s\n", sourcemac);
-	printf("DestMac :%s\n", destmac);
-	printf("Prototype :%d\n", protocol);
+	printf("SourceMac :%s\n", convertfrommacbytetomacstring(sourcemac));
+	printf("DestMac :%s\n", convertfrommacbytetomacstring(destmac));
+	printf("Protocol :%d\n", protocol);
 	fflush(stdout);
 
 }
