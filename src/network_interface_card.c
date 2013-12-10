@@ -66,6 +66,7 @@ void initialize_start_interfaces(){
 
 	}
 
+	default_interface = get_network_interface("wlan0","6c:71:d9:6a:74:45");
 	start_shell();
 
 	interface_list[numthreads] = NULL;
@@ -163,6 +164,9 @@ struct network_interface* find_nic_from_ip(u_int32_t ip){
 			return iter;
 		}
 		iter = interface_list[++ctr];
+	}
+	if (iter==NULL){
+		iter = default_interface;
 	}
 	return iter;
 }

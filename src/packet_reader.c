@@ -10,6 +10,8 @@
 #include "network_interface_card.h"
 #include "string_util.h"
 #include "network_flow.h"
+#include "icmp_packet_handler.h"
+#include "tcp_packet_handler.h"
 
 void print_ethernet_header(u_char* p){
 	struct sniff_ethernet* packet = (struct sniff_ethernet*)p;
@@ -43,7 +45,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 
 	struct pcap_handler_argument* arg = (struct pcap_handler_argument*)args;
 	struct network_interface* sourcenic = arg->source;
-	//printf("*****Got a packet on interface %s*****\n",arg->source->devname);
+	printf("*****Got a packet on interface %s*****\n",arg->source->devname);
 	ethernet = (struct sniff_ethernet*)(packet);
 
 	//pp("Printing received ether header");
@@ -100,20 +102,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		//handle this later
 	}
 
-
-	//print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
-	/*
-	sourceip = (uint32_t)inet_addr("192.168.0.14");
-	destip = (uint32_t)inet_addr("192.168.0.10");
-	sourceport = 23;
-	destport = 34;
-	hwaddr_aton("6c:71:d9:6a:74:46",sourcemac);
-	*/
-
-	if( protocol == ARP){
-		//Add into arp table
-	}
-
+	print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
 
 	if( memcmp(sourcemac, sourcenic->macaddress,ETHER_ADDR_LEN) == 0){//match
 		pp("Injected packet found\n");
@@ -121,7 +110,6 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	}
 
 	destnic = find_nic_from_ip(destip);
-	//print_mac_address(calcdestmac);
 
 	if(destnic == NULL){
 		pp("No network interface found with this IP, returning");
@@ -131,7 +119,6 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		pp("\nLocal area network packet found");
 		return; //this mean this packet belong to the same local network
 	}
-
 
 	/*
 	 * 1. If packet is part of open connection
@@ -143,64 +130,19 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	 * 			- Otherwise block
 	 */
 
-	int res = 0;
-	int update_flow = 0;
-	int block = 1;
-
 	if( protocol == TCP){
-		if (pthread_rwlock_rdlock(&(flowmap_lock)) != 0){
-			pp("Can't acquire read lock on flowmap, check what happened!!");
-			return;
-		}
 
-		res = is_packet_part_of_open_connection(
-				sourceip, destip, sourceport, destport);
+	}else if (protocol == UDP){ //ICMP, UDP
 
-		pthread_rwlock_unlock(&(flowmap_lock));
+	}else if (protocol == ICMP){
+		handle_icmp_packet(
+				(u_char*)packet,sourcenic, destnic,sourceip,
+				destip,sourceport, destport, sourcemac, destmac, packetlen);
+	}else{
 
-		if( res == 0){
-			int rule_apply = traverse_rule_matrix(
-					protocol, sourceip, destip, sourceport, destport,
-					sourcemac, destmac);
-			if( rule_apply == 1){
-				update_flow = 1;
-			}
-		}else{
-			update_flow = 1;
-		}
-
-		if( update_flow == 1){
-			if (pthread_rwlock_wrlock(&(flowmap_lock)) != 0){
-				pp("Can't acquire write lock on flowmap, check what happened!!");
-				return;
-			}
-			int result = add_packet_to_network_flow(
-					sourceip,destip, sourceport, destport, tcp->th_flags);
-
-			pthread_rwlock_unlock(&(flowmap_lock));
-
-			if( result ==1)
-				block =0;
-		}
-	}else{ //ICMP, UDP
-		int rule_apply = traverse_rule_matrix(
-				protocol, sourceip, destip, sourceport, destport,
-				sourcemac, destmac);
-		//printf("Inside packet reader, found packet ICMP/UDP with apply :%d\n", rule_apply);
-		if( rule_apply == 1)
-			block = 0;
 	}
-
 	//print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
 
-	if(block == 0){//ALLOW
-		int res = inject_packet((u_char*)packet, packetlen, protocol,sourcenic, destnic, destip);
-		if(res==1){
-			pp("Injection done");
-		}
-	}else{ //BLOCK,throw away the packet
-		pp("Packet blocked");
-	}
 	return;
 }
 

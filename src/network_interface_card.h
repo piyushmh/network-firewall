@@ -38,5 +38,6 @@ struct network_interface* find_nic_from_ip(u_int32_t ip);
 
 
 struct network_interface* interface_list[10];
+struct network_interface* default_interface;
 
 #endif /* NETWORK_INTERFACE_H_ */

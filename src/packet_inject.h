@@ -11,15 +11,9 @@
 #include "packet_reader.h"
 #include "network_interface_card.h"
 
-int inject_packet( u_char* packet, size_t length ,
-		enum PROTOCOL protocol, struct network_interface* sourceinterface,
-		struct network_interface* destinterfacep, u_int32_t destip);
-
-void inject_tcp_packet();
-void inject_udp_packet();
-void inject_icmp_packet();
-void inject_arp_packet();
-
-
+int inject_packet(
+		struct sniff_ethernet* packet,
+		size_t packetlen,
+		struct network_interface* destnic);
 
 #endif /* PACKET_INJECT_H_ */

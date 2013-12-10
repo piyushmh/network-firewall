@@ -115,7 +115,7 @@ u_char* get_macaddr_from_ip_arpcache(const u_int32_t ip,
 		long long timediff = difftime(currtime,entry->timestamp);
 		//printf("Cache address: %p\n", entry);
 		//printf("\nC: %ld  S: %ld Diff :%ld\n", currtime, entry->timestamp, timediff);
-		if( timediff > 60){
+		if( timediff > CACHE_VALID_TIME_SEC){
 			arp_call_needed = 1;
 		}
 	}
