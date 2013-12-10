@@ -79,6 +79,11 @@ struct connection* find_connection_from_flowmap(
 	return conn;
 }
 
+/*
+ * 0 - No connection
+ * 1 - Init connection
+ * 2 - Active connection
+ */
 int is_packet_open_connection_inner(
 		const u_int32_t sourceip,
 		const u_int32_t destip,
@@ -95,12 +100,21 @@ int is_packet_open_connection_inner(
 		return 0;
 
 	if(conn->is_conn_active > 0)
+		return 2;
+	else if( conn->is_conn_init > 0)
 		return 1;
 	else
 		return 0;
 }
 
 
+/*
+ * 0 - No connection
+ * 1 - Forward connection but init stage
+ * 2 - Forward connection active stage
+ * 3 - Reverse connection init age
+ * 4 - Reverse connection active stage
+ */
 int is_packet_part_of_open_connection(
 		const u_int32_t sourceip,
 		const u_int32_t destip,
@@ -110,13 +124,15 @@ int is_packet_part_of_open_connection(
 
 	int ret = is_packet_open_connection_inner(
 			sourceip,destip, sourceport,destport);
-	if(ret == 1)
-		return 1;
+	if(ret != 0)
+		return ret;
 
 	ret = is_packet_open_connection_inner(
 			destip, sourceip, destport, sourceport);
 	if( ret == 1)
-		return 2; //this means reverse source and destination
+		return 3; //this means reverse source and destination
+	else if(ret==2)
+		return 4;
 	else
 		return 0;
 }
@@ -185,8 +201,11 @@ int update_flow_with_packet(
 	}else if (f == FINACK){
 
 		if( conn->is_conn_active == 1){
-
-			if( conn->state == 4){
+			if(conn->state == 3){
+				conn->state = 4;
+				conn->is_conn_teardown = 1;
+			}
+			else if( conn->state == 4){
 				conn->state = 7;
 			}else if (conn->state == 6){
 				conn->state = 8;
@@ -236,7 +255,8 @@ int add_packet_to_network_flow(
 	struct host_node* hostnode = find_host_node_from_flowmap(sourceip);
 
 	if(hostnode == NULL){
-		hostnode = makenewhostnode(sourceip);
+		printf("Adding new host");
+				hostnode = makenewhostnode(sourceip);
 		HASH_ADD_INT(flowmap,source_ip,hostnode);
 	}
 
@@ -250,6 +270,7 @@ int add_packet_to_network_flow(
 		addednew = 1;
 	}
 
+	printf("Host and conn %p %p \n:", hostnode, conn);
 	//Here both hostnode and conn should be not null
 	assert(hostnode!= NULL && conn!=NULL);
 

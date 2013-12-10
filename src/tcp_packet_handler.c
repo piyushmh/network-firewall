@@ -40,15 +40,22 @@ int handle_tcp_packet(
 			sourceip, destip, sourceport, destport);
 	pthread_rwlock_unlock(&(flowmap_lock));
 
-	if( res == 0){
+	if( res == 0 || res == 1){
 		int rule_apply = traverse_rule_matrix(
 				TCP, sourceip, destip, sourceport, destport,
 				sourcemac, destmac);
 		if( rule_apply == 1){
 			update_flow = 1;
 		}
-	}else{
+	}else if(res==2 || res ==4){
 		update_flow = 1;
+	}else if(res == 3){
+		int rule_apply = traverse_rule_matrix(
+				TCP, sourceip, destip, sourceport, destport,
+				sourcemac, destmac);
+		if( rule_apply == 1){
+			update_flow = 1;
+		}
 	}
 
 	if( update_flow == 1){
@@ -57,10 +64,12 @@ int handle_tcp_packet(
 			return 0;
 		}
 		int result = 0;
-		if( res == 0 || res == 1){
+		if( res == 0 || res == 1 || res ==2){
+			printf("Adding straight packet\n");
 			result = add_packet_to_network_flow(
 					sourceip,destip, sourceport, destport, tcp->th_flags);
-		}else if (res ==2){
+		}else if (res ==3 || res==4	){
+			printf("Adding reverse packet packet\n");
 			result = add_packet_to_network_flow(
 					destip,sourceip, destport, sourceport, tcp->th_flags);
 		}else{
