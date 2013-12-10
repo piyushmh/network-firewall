@@ -94,7 +94,7 @@ int is_packet_open_connection_inner(
 	if(conn == NULL)
 		return 0;
 
-	if(conn->is_conn_init > 0)
+	if(conn->is_conn_active > 0)
 		return 1;
 	else
 		return 0;
@@ -116,7 +116,7 @@ int is_packet_part_of_open_connection(
 	ret = is_packet_open_connection_inner(
 			destip, sourceip, destport, sourceport);
 	if( ret == 1)
-		return 1;
+		return 2; //this means reverse source and destination
 	else
 		return 0;
 }
@@ -139,7 +139,9 @@ int update_flow_with_packet(
 		if( conn->is_conn_init == 1 ){//valid case
 			if(conn->state == 1)
 				conn->state = 2;
-
+			else{
+				//might be retransmission, we have seen that a lot
+			}
 		}else{
 			flow_updated = 0;
 		}
@@ -182,7 +184,7 @@ int update_flow_with_packet(
 
 	}else if (f == FINACK){
 
-		if( conn->is_conn_active == 1 && conn->is_conn_teardown==1){
+		if( conn->is_conn_active == 1){
 
 			if( conn->state == 4){
 				conn->state = 7;
@@ -201,6 +203,7 @@ int update_flow_with_packet(
 			flow_updated = 0;
 	}
 
+	printf("Network state updated to :%d with packet %d and u:%d \n", conn->state, f,flow_updated);
 	return flow_updated;
 }
 
@@ -255,19 +258,25 @@ int add_packet_to_network_flow(
 	if(flag&TH_SYN){
 		if(flag&TH_ACK){
 			f = SYNACK;
+			printf("XX:%s\n","SYNACK");
 		}else{
 			f = SYN;
+			printf("XX:%s\n","SYN");
 		}
 	} else if(flag&TH_FIN){
 		if(flag&TH_ACK){
 			f = FINACK;
+			printf("XX:%s\n","FINACK");
 		}else{
 			f = FIN;
+			printf("XX:%s\n","FIN");
 		}
 	}else if (flag&TH_ACK){
 		f = ACK;
+		printf("XX:%s\n","ACK");
 	} else if(flag&TH_RST) {
 		f = RST;
+		printf("XX:%s\n","RST");
 	}else if (flag == 0){
 		f = EMPTY;
 	}else{//don't care for now
@@ -280,7 +289,12 @@ int add_packet_to_network_flow(
 		retval = 0;
 		if ( addednew == 1)
 			remove_connection(hostnode, conn);
+	}else{
+		if(conn->state == 8 || conn->state == 0){
+			remove_connection(hostnode,conn);
+		}
 	}
+
 
 	return retval;
 }

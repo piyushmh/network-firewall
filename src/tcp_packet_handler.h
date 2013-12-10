@@ -8,6 +8,21 @@
 #ifndef TCP_PACKET_HANDLER_H_
 #define TCP_PACKET_HANDLER_H_
 
-void handle_tcp_packet();
+#include <stddef.h>
+#include "structures.h"
+#include "network_interface_card.h"
+
+int handle_tcp_packet(
+		u_char* p,
+		struct sniff_tcp* tcp,
+		struct network_interface* sourcenic,
+		struct network_interface* destnic,
+		u_int32_t sourceip,
+		u_int32_t destip,
+		u_short sourceport,
+		u_short destport,
+		u_char* sourcemac,
+		u_char*destmac,
+		int packetlen);
 
 #endif /* TCP_PACKET_HANDLER_H_ */

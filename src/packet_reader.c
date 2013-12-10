@@ -4,13 +4,13 @@
 #include <pthread.h>
 #include <netinet/if_ether.h>
 
-#include "packet_inject.h"
 #include "packet_reader.h"
 #include "apply_rule.h"
 #include "network_interface_card.h"
 #include "string_util.h"
 #include "network_flow.h"
 #include "icmp_packet_handler.h"
+#include "structures.h"
 #include "tcp_packet_handler.h"
 
 void print_ethernet_header(u_char* p){
@@ -131,7 +131,9 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	 */
 
 	if( protocol == TCP){
-
+		handle_tcp_packet(
+				(u_char*)packet,tcp,sourcenic, destnic,sourceip,
+				destip,sourceport, destport, sourcemac, destmac, packetlen);
 	}else if (protocol == UDP){ //ICMP, UDP
 
 	}else if (protocol == ICMP){

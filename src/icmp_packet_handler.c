@@ -45,7 +45,6 @@ int handle_icmp_packet(
 	}
 
 	if(finaldestmac == NULL){
-		//printf("XX:%s %s", convertfromintegertoIP(destinterface->net), convertfromintegertoIP(destip));
 		pp("Can't fetch mac address from ARP cache, returning w/o injecting");
 		return 0;
 	}
