@@ -25,7 +25,7 @@ int handle_pcap_file(char* filename){
 	handle = pcap_open_offline(filename, errbuf);   //call pcap library function
 
 	if (handle == NULL) {
-		printf("Couldn't open pcap file %s: %s\n");
+		printf("Couldn't open pcap file %s: \n", filename);
 		return 0;
 	}
 

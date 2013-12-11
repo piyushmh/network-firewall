@@ -30,7 +30,7 @@ all: NetworkFirewall
 NetworkFirewall: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -g -o "NetworkFirewall" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc  -o "NetworkFirewall" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

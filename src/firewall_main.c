@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "string_util.h"
 #include "network_flow.h"
+#include "pcap_file_handler.h"
 
 int main(int argc, char** argv){
 

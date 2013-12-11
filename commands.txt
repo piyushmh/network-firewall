@@ -4,9 +4,7 @@ sudo route add -net 140.40.40.0 netmask 255.255.255.0 gw 130.30.30.1
 Add default gateway to host
 route add default gw {IP-ADDRESS} {INTERFACE-NAME}
 
-
 See the routing table
-
 sudo route -n
 netstat -rn
 
@@ -14,17 +12,15 @@ netstat -rn
 Assign IP to a host
 sudo ifconfig eth0 130.30.30.5 netmask 255.255.255.0 up
 
-
 start monkey server
-
 /opt/monkey/bin/banana start
 
 
-FETCH file from webserver
-
+Fetch file from webserver
 GET / HTTP/1.0
 
 
 Pass PROTOCOL=ICMP SRCIP=130.30.30.0/24 SRCPORT=ANY DSTIP=140.40.40.0/24 DSTPORT=ANY PRIORITY=0
 
+Pass PROTOCOL=TCP SRCIP=140.40.40.0/24 SRCPORT=ANY DSTIP=130.30.30.0/24 DSTPORT=ANY PRIORITY=0
 

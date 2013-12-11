@@ -12,6 +12,7 @@
 #include "icmp_packet_handler.h"
 #include "structures.h"
 #include "tcp_packet_handler.h"
+#include "udp_packet_handler.h"
 
 void print_ethernet_header(u_char* p){
 	struct sniff_ethernet* packet = (struct sniff_ethernet*)p;
@@ -122,7 +123,9 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 				(u_char*)packet,(struct pcap_pkthdr *) header,tcp,sourcenic, destnic,sourceip,
 				destip,sourceport, destport, sourcemac, destmac, packetlen, is_pcap);
 	}else if (protocol == UDP){
-
+		handle_udp_packet(
+				(u_char*)packet,(struct pcap_pkthdr *)header,sourcenic, destnic,sourceip,
+				destip,sourceport, destport, sourcemac, destmac, packetlen, is_pcap);
 	}else if (protocol == ICMP){
 		handle_icmp_packet(
 				(u_char*)packet,(struct pcap_pkthdr *)header,sourcenic, destnic,sourceip,

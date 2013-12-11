@@ -1,4 +1,6 @@
 .metadata/
+*.txt
+*dump*
 # Object files
 *.o
 *.ko
