@@ -8,4 +8,6 @@
 
 void* read_packets(void* nic);
 
+void read_pcap_file(char* filname);
+
 #endif /* PACKET_READER_H */

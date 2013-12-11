@@ -69,14 +69,16 @@ int is_packet_part_of_open_connection(
 		const u_int32_t sourceip,
 		const u_int32_t destip,
 		const u_short sourceport,
-		const u_short destport);
+		const u_short destport,
+		int is_pcap);
 
 int add_packet_to_network_flow(
 		const u_int32_t sourceip,
 		const u_int32_t destip,
 		const u_int32_t sourceport,
 		const u_int32_t destport,
-		const u_char flag);
+		const u_char flag,
+		int is_pcap);
 
 
 #endif /* NETWORK_FLOW_H_ */

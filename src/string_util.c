@@ -13,7 +13,7 @@
 
 #include "string_util.h"
 
-//#define DEBUG
+#define DEBUG
 
 char *strstrip(char *s){
 	size_t size;

@@ -31,7 +31,6 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	u_char *payload; /* Packet payload */
 	enum PROTOCOL protocol;
 	u_int32_t packetlen = header->caplen;
-
 	u_int size_network;
 	u_int size_transport;
 
@@ -44,17 +43,15 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	u_short destport = 0;
 
 	struct pcap_handler_argument* arg = (struct pcap_handler_argument*)args;
+	int is_pcap = arg->is_pcap;
 	struct network_interface* sourcenic = arg->source;
 	printf("*****Got a packet on interface %s*****\n",arg->source->devname);
 	ethernet = (struct sniff_ethernet*)(packet);
 
-	//pp("Printing received ether header");
-	//print_ethernet_header((u_char*)packet);
-
-	/* Now find which type of packet we got ICMP, TCP, UDP etc */
 	memcpy(sourcemac, ethernet->ether_shost, ETHER_ADDR_LEN);
 	memcpy(destmac, ethernet->ether_dhost, ETHER_ADDR_LEN);
 
+	/* Now find which type of packet we got ICMP, TCP, UDP etc */
 	if(ethernet->ether_type == htons(ETH_P_ARP)){
 		protocol = ARP;
 		//fill these
@@ -104,7 +101,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 
 	print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
 
-	if( memcmp(sourcemac, sourcenic->macaddress,ETHER_ADDR_LEN) == 0){//match
+	if((is_pcap==0) && (memcmp(sourcemac, sourcenic->macaddress,ETHER_ADDR_LEN) == 0)){//match
 		pp("Injected packet found\n");
 		return; //do nothing, this was a injected packet
 	}
@@ -115,51 +112,37 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		pp("No network interface found with this IP, returning");
 		return;
 	}
-	if(memcmp(destnic->macaddress, sourcenic->macaddress, ETHER_ADDR_LEN) == 0){
+	if((is_pcap ==0)&&(memcmp(destnic->macaddress, sourcenic->macaddress, ETHER_ADDR_LEN) == 0)){
 		pp("\nLocal area network packet found");
 		return; //this mean this packet belong to the same local network
 	}
 
-	/*
-	 * 1. If packet is part of open connection
-	 * 		- Update flow,if packet is valid let it through otherwise block
-	 * 2. Else, apply rules
-	 * 		- If rules failes, block the packet
-	 * 		- Else, rules passes, update flow.
-	 * 			- If packet is valid, let it through
-	 * 			- Otherwise block
-	 */
-
 	if( protocol == TCP){
 		handle_tcp_packet(
-				(u_char*)packet,tcp,sourcenic, destnic,sourceip,
-				destip,sourceport, destport, sourcemac, destmac, packetlen);
-	}else if (protocol == UDP){ //ICMP, UDP
+				(u_char*)packet,(struct pcap_pkthdr *) header,tcp,sourcenic, destnic,sourceip,
+				destip,sourceport, destport, sourcemac, destmac, packetlen, is_pcap);
+	}else if (protocol == UDP){
 
 	}else if (protocol == ICMP){
 		handle_icmp_packet(
-				(u_char*)packet,sourcenic, destnic,sourceip,
-				destip,sourceport, destport, sourcemac, destmac, packetlen);
+				(u_char*)packet,(struct pcap_pkthdr *)header,sourcenic, destnic,sourceip,
+				destip,sourceport, destport, sourcemac, destmac, packetlen, is_pcap);
 	}else{
 
 	}
-	//print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac);
-
 	return;
 }
 
 
 void *read_packets(void *nic){
-	//pp("here");
 	struct network_interface* interface = (struct network_interface*) nic;
-	//print_network_interface(*interface);
-	//while(1){}
 	struct pcap_handler_argument arg;
 	arg.source = interface;
 	arg.dest = NULL;
+	arg.is_pcap = 0;
 	int val = pcap_loop(interface->handle, -1, disassemble_packet, (void*)(&arg));
 	printf("%d\n", val);
-	/* And close the session */
 	pcap_close(interface->handle);
 	return 0;
 }
+

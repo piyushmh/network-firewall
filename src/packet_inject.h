@@ -13,7 +13,9 @@
 
 int inject_packet(
 		struct sniff_ethernet* packet,
+		struct pcap_pkthdr *header,
 		size_t packetlen,
-		struct network_interface* destnic);
+		struct network_interface* destnic,
+		int is_pcap);
 
 #endif /* PACKET_INJECT_H_ */

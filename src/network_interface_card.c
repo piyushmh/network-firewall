@@ -66,7 +66,7 @@ void initialize_start_interfaces(){
 
 	}
 
-	default_interface = get_network_interface("wlan0","6c:71:d9:6a:74:45");
+	initialize_default_interface();
 	start_shell();
 
 	interface_list[numthreads] = NULL;
@@ -177,4 +177,9 @@ void print_network_interface(struct network_interface nic){
 	printf("\nMask: %s", convertfromintegertoIP(nic.mask));
 	printf("\nNet :%s", convertfromintegertoIP(nic.net));
 	fflush(stdout);
+}
+
+
+void initialize_default_interface(){
+	default_interface = get_network_interface("wlan0","6c:71:d9:6a:74:45");
 }

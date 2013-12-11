@@ -10,6 +10,7 @@
 #include "network_flow.h"
 #include "string_util.h"
 #include "packet_reader.h"
+#include "pcap_file_handler.h"
 
 /* Used internally to identify packet type*/
 typedef enum { SYN, SYNACK, ACK, FIN, FINACK, RST, EMPTY, UNKNOWN} FLAG;
@@ -119,7 +120,8 @@ int is_packet_part_of_open_connection(
 		const u_int32_t sourceip,
 		const u_int32_t destip,
 		const u_short sourceport,
-		const u_short destport){
+		const u_short destport,
+		int is_pcap){
 
 
 	int ret = is_packet_open_connection_inner(
@@ -139,7 +141,8 @@ int is_packet_part_of_open_connection(
 
 int update_flow_with_packet(
 		struct connection* conn,
-		FLAG f){
+		FLAG f,
+		int is_pcap){
 
 	int flow_updated = 1;
 
@@ -159,7 +162,8 @@ int update_flow_with_packet(
 				//might be retransmission, we have seen that a lot
 			}
 		}else{
-			flow_updated = 0;
+			if (is_pcap ==0)
+				flow_updated = 0;
 		}
 	}else if( f == ACK){
 
@@ -180,7 +184,8 @@ int update_flow_with_packet(
 				//Maybe be a retransmission
 			}
 		}else{
-			flow_updated = 0;
+			if (is_pcap ==0)
+				flow_updated = 0;
 		}
 
 	}else if( f == FIN){
@@ -195,7 +200,8 @@ int update_flow_with_packet(
 				conn->state = 7;
 			}
 		}else{
-			flow_updated = 0;
+			if (is_pcap ==0)
+				flow_updated = 0;
 		}
 
 	}else if (f == FINACK){
@@ -212,14 +218,16 @@ int update_flow_with_packet(
 			}
 
 		}else{
-			flow_updated = 0;
+			if (is_pcap ==0)
+				flow_updated = 0;
 		}
 
 	}else if ( f == RST){
 		if( conn->is_conn_init == 1){
 			conn->state = 8;
 		}else
-			flow_updated = 0;
+			if (is_pcap ==0)
+				flow_updated = 0;
 	}
 
 	printf("Network state updated to :%d with packet %d and u:%d \n", conn->state, f,flow_updated);
@@ -247,7 +255,8 @@ int add_packet_to_network_flow(
 		const u_int32_t destip,
 		const u_int32_t sourceport,
 		const u_int32_t destport,
-		const u_char flag){
+		const u_char flag,
+		int is_pcap){
 
 	int retval = 1;
 	int addednew = 0; //This is used to signify that this connection is new
@@ -304,7 +313,7 @@ int add_packet_to_network_flow(
 		f = UNKNOWN;
 	}
 
-	int flow_update = update_flow_with_packet(conn, f);
+	int flow_update = update_flow_with_packet(conn, f, is_pcap);
 
 	if( flow_update == 0){ //Remove the connection
 		retval = 0;

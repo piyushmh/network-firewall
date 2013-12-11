@@ -15,6 +15,7 @@
 
 int handle_icmp_packet(
 		u_char* p,
+		struct pcap_pkthdr *header,
 		struct network_interface* sourcenic,
 		struct network_interface* destnic,
 		u_int32_t sourceip,
@@ -23,7 +24,7 @@ int handle_icmp_packet(
 		u_short destport,
 		u_char* sourcemac,
 		u_char*destmac,
-		int packetlen);
-
+		int packetlen,
+		int is_pcap);
 
 #endif /* ICMP_PACKET_HANDLER_H_ */
