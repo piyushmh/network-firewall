@@ -60,7 +60,7 @@ void initialize_start_interfaces(){
 		}
 
 		struct network_interface* nic = get_network_interface(devname,macaddr);
-		print_network_interface(*nic);
+		//print_network_interface(*nic);
 		interface_list[numthreads] = nic;
 		pthread_create(&threads[numthreads++], NULL, read_packets, (void*)nic);
 

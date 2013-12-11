@@ -230,7 +230,7 @@ int update_flow_with_packet(
 				flow_updated = 0;
 	}
 
-	printf("Network state updated to :%d with packet %d and u:%d \n", conn->state, f,flow_updated);
+	//printf("Network state updated to :%d with packet %d and u:%d \n", conn->state, f,flow_updated);
 	return flow_updated;
 }
 
@@ -264,7 +264,7 @@ int add_packet_to_network_flow(
 	struct host_node* hostnode = find_host_node_from_flowmap(sourceip);
 
 	if(hostnode == NULL){
-		printf("Adding new host");
+		//printf("Adding new host");
 				hostnode = makenewhostnode(sourceip);
 		HASH_ADD_INT(flowmap,source_ip,hostnode);
 	}
@@ -279,7 +279,8 @@ int add_packet_to_network_flow(
 		addednew = 1;
 	}
 
-	printf("Host and conn %p %p \n:", hostnode, conn);
+	//printf("Host and conn %p %p \n:", hostnode, conn);
+
 	//Here both hostnode and conn should be not null
 	assert(hostnode!= NULL && conn!=NULL);
 
@@ -288,22 +289,22 @@ int add_packet_to_network_flow(
 	if(flag&TH_SYN){
 		if(flag&TH_ACK){
 			f = SYNACK;
-			printf("XX:%s\n","SYNACK");
+			//printf("XX:%s\n","SYNACK");
 		}else{
 			f = SYN;
-			printf("XX:%s\n","SYN");
+			//printf("XX:%s\n","SYN");
 		}
 	} else if(flag&TH_FIN){
 		if(flag&TH_ACK){
 			f = FINACK;
-			printf("XX:%s\n","FINACK");
+			//printf("XX:%s\n","FINACK");
 		}else{
 			f = FIN;
-			printf("XX:%s\n","FIN");
+			//printf("XX:%s\n","FIN");
 		}
 	}else if (flag&TH_ACK){
 		f = ACK;
-		printf("XX:%s\n","ACK");
+		//printf("XX:%s\n","ACK");
 	} else if(flag&TH_RST) {
 		f = RST;
 		printf("XX:%s\n","RST");

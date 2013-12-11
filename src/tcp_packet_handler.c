@@ -79,11 +79,11 @@ int handle_tcp_packet(
 		}
 		int result = 0;
 		if( res == 0 || res == 1 || res ==2){
-			printf("Adding straight packet\n");
+			pp("Adding straight packet\n");
 			result = add_packet_to_network_flow(
 					sourceip,destip, sourceport, destport, tcp->th_flags, is_pcap);
 		}else if (res ==3 || res==4	){
-			printf("Adding reverse packet packet\n");
+			pp("Adding reverse packet packet\n");
 			result = add_packet_to_network_flow(
 					destip,sourceip, destport, sourceport, tcp->th_flags, is_pcap);
 		}else{
@@ -118,7 +118,7 @@ int handle_tcp_packet(
 
 		retval =  inject_packet(packet, header, packetlen, destnic, is_pcap);
 	}else{
-		printf("Packed blocked\n");
+		pp("Packed blocked\n");
 	}
 	return retval;
 }

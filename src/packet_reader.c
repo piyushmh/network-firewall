@@ -46,7 +46,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 	struct pcap_handler_argument* arg = (struct pcap_handler_argument*)args;
 	int is_pcap = arg->is_pcap;
 	struct network_interface* sourcenic = arg->source;
-	printf("*****Got a packet on interface %s*****\n",arg->source->devname);
+	//printf("*****Got a packet on interface %s*****\n",arg->source->devname);
 	ethernet = (struct sniff_ethernet*)(packet);
 
 	memcpy(sourcemac, ethernet->ether_shost, ETHER_ADDR_LEN);
@@ -100,7 +100,7 @@ void disassemble_packet(u_char *args, const struct pcap_pkthdr *header,
 		//handle this later
 	}
 
-	print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
+	//print_packet(sourceip,destip, sourceport, destport,sourcemac, destmac, protocol);
 
 	if((is_pcap==0) && (memcmp(sourcemac, sourcenic->macaddress,ETHER_ADDR_LEN) == 0)){//match
 		pp("Injected packet found\n");
