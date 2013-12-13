@@ -307,7 +307,7 @@ int add_packet_to_network_flow(
 		//printf("XX:%s\n","ACK");
 	} else if(flag&TH_RST) {
 		f = RST;
-		printf("XX:%s\n","RST");
+		//printf("XX:%s\n","RST");
 	}else if (flag == 0){
 		f = EMPTY;
 	}else{//don't care for now
